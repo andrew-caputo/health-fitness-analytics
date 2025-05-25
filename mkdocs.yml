@@ -1,0 +1,29 @@
+site_name: Health & Fitness Analytics Docs
+site_url: https://<andrew-caputo>.github.io/<health-fitness-analytics>/
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+nav:
+  - Home: README.md
+  - Architecture: architecture.md
+  - Backend: backend.md
+  - Frontend: frontend.md
+  - Data Integrations: data_integrations.md
+  - AI & Analytics: ai_analytics.md
+  - Security: security.md
+  - Testing: testing.md
+  - Deployment: deployment.md
+  - Code Style: code_style.md
+  - Environment Setup: env_setup.md
+  - Best Practices: best_practices.md
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true 

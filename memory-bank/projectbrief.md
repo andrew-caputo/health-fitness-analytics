@@ -3,6 +3,12 @@
 ## Project Overview
 A comprehensive health and fitness tracking application that integrates data from multiple sources to provide AI-powered insights and recommendations.
 
+## Documentation
+- All project documentation is managed in markdown under `docs/`.
+- MkDocs (Material theme) generates a browsable documentation site.
+- Documentation is hosted on GitHub Pages and is updated via `mkdocs gh-deploy`.
+- The documentation site is a core deliverable for transparency, onboarding, and ongoing development.
+
 ## Core Requirements
 
 ### Data Sources
@@ -86,6 +92,7 @@ A comprehensive health and fitness tracking application that integrates data fro
 5. Maintain high performance and reliability
 6. Achieve robust containerization and dependency management for backend services
 7. Enforce code quality and maintainability with linting and best practices
+8. Maintain comprehensive, browsable documentation for all project aspects
 
 ## Success Metrics
 1. Data accuracy and completeness

@@ -15,6 +15,7 @@ Our platform integrates data from multiple sources to provide:
 4. Goal tracking and progress monitoring
 5. Robust backend containerization and dependency management
 6. Clean, maintainable codebase with enforced code quality (linting, absolute imports)
+7. Comprehensive, browsable documentation for onboarding, transparency, and ongoing development
 
 ## User Experience Goals
 
