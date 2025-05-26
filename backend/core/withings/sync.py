@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from backend.core.models import DataSourceConnection, DataSyncLog, HealthMetric, WithingsMeasurement
 from .client import WithingsClient
-from .config import WITHINGS_SYNC_CONFIG
+from backend.core.config import WITHINGS_SYNC_CONFIG
 from .models import (
     WithingsMeasurement as WithingsMeasurementModel,
     WithingsActivity,

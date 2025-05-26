@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, Dict, Any, List
 from pydantic_settings import BaseSettings
 
 
@@ -53,5 +53,145 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
 
+
+# Withings API endpoints and configuration
+WITHINGS_API_BASE_URL = "https://wbsapi.withings.net"
+WITHINGS_AUTH_URL = "https://account.withings.com/oauth2_user/authorize2"
+WITHINGS_TOKEN_URL = "https://wbsapi.withings.net/v2/oauth2"
+
+# Withings API scopes
+WITHINGS_SCOPES = [
+    "user.info",
+    "user.metrics",
+    "user.activity",
+    "user.sleepevents"
+]
+
+# Withings metric types mapping
+WITHINGS_METRICS = {
+    "weight": {
+        "type": "instantaneous",
+        "unit": "kg",
+        "description": "Body weight",
+        "api_field": "weight",
+        "category": "body"
+    },
+    "body_composition": {
+        "type": "instantaneous",
+        "metrics": {
+            "fat_mass": {
+                "unit": "kg",
+                "description": "Fat mass",
+                "api_field": "fat_mass",
+                "category": "body"
+            },
+            "fat_free_mass": {
+                "unit": "kg",
+                "description": "Fat free mass",
+                "api_field": "fat_free_mass",
+                "category": "body"
+            },
+            "fat_ratio": {
+                "unit": "%",
+                "description": "Fat ratio",
+                "api_field": "fat_ratio",
+                "category": "body"
+            },
+            "muscle_mass": {
+                "unit": "kg",
+                "description": "Muscle mass",
+                "api_field": "muscle_mass",
+                "category": "body"
+            },
+            "muscle_mass_ratio": {
+                "unit": "%",
+                "description": "Muscle mass ratio",
+                "api_field": "muscle_mass_ratio",
+                "category": "body"
+            },
+            "hydration": {
+                "unit": "%",
+                "description": "Hydration level",
+                "api_field": "hydration",
+                "category": "body"
+            },
+            "bone_mass": {
+                "unit": "kg",
+                "description": "Bone mass",
+                "api_field": "bone_mass",
+                "category": "body"
+            }
+        }
+    }
+}
+
+# Withings API rate limits
+WITHINGS_RATE_LIMITS = {
+    "requests_per_minute": 60,
+    "requests_per_hour": 1000
+}
+
+# Withings sync configuration
+WITHINGS_SYNC_CONFIG = {
+    "batch_size": 100,
+    "max_retries": 3,
+    "retry_delay": 5,  # seconds
+    "sync_interval": 900  # 15 minutes in seconds
+}
+
+# Oura API endpoints and configuration
+OURA_BASE_URL = "https://api.ouraring.com"
+OURA_AUTH_URL = "https://cloud.ouraring.com/oauth/authorize"
+OURA_TOKEN_URL = "https://api.ouraring.com/oauth/token"
+
+# Oura API scopes
+OURA_SCOPES = ["daily", "heartrate", "workout", "tag", "session"]
+
+# Oura API rate limits
+OURA_RATE_LIMITS = {
+    "requests_per_minute": 300,
+    "requests_per_hour": 5000
+}
+
+# Oura sync configuration
+OURA_SYNC_CONFIG = {
+    "batch_size": 50,
+    "max_retries": 3,
+    "retry_delay": 5,
+    "sync_interval": 900
+}
+
+# Apple Health configuration
+APPLE_HEALTH_CONFIG = {
+    "supported_formats": [".zip"],
+    "max_file_size": 100 * 1024 * 1024,  # 100MB
+    "batch_size": 1000,
+    "processing_timeout": 3600  # 1 hour
+}
+
+# CSV Import configuration
+CSV_IMPORT_CONFIG = {
+    "supported_formats": [".csv"],
+    "max_file_size": 10 * 1024 * 1024,  # 10MB
+    "batch_size": 1000,
+    "max_rows": 100000
+}
+
+# General sync configuration
+GENERAL_SYNC_CONFIG = {
+    "default_sync_interval": 900,  # 15 minutes
+    "max_concurrent_syncs": 5,
+    "sync_timeout": 1800,  # 30 minutes
+    "retry_exponential_base": 2,
+    "max_retry_delay": 300  # 5 minutes
+}
+
+# File upload configuration
+FILE_UPLOAD_CONFIG = {
+    "upload_dir": "uploads",
+    "temp_dir": "temp",
+    "max_file_age_days": 7,
+    "cleanup_interval": 3600  # 1 hour
+}
 
 settings = Settings() 

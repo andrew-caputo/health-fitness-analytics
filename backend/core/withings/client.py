@@ -4,22 +4,20 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from .config import (
+from backend.core.config import (
+    settings,
     WITHINGS_API_BASE_URL,
     WITHINGS_AUTH_URL,
-    WITHINGS_CLIENT_ID,
-    WITHINGS_CLIENT_SECRET,
     WITHINGS_RATE_LIMITS,
-    WITHINGS_REDIRECT_URI,
     WITHINGS_SCOPES,
     WITHINGS_TOKEN_URL,
 )
 
 class WithingsClient:
     def __init__(self):
-        self.client_id = WITHINGS_CLIENT_ID
-        self.client_secret = WITHINGS_CLIENT_SECRET
-        self.redirect_uri = WITHINGS_REDIRECT_URI
+        self.client_id = settings.WITHINGS_CLIENT_ID
+        self.client_secret = settings.WITHINGS_CLIENT_SECRET
+        self.redirect_uri = settings.WITHINGS_REDIRECT_URI
         self.base_url = WITHINGS_API_BASE_URL
         self.auth_url = WITHINGS_AUTH_URL
         self.token_url = WITHINGS_TOKEN_URL
