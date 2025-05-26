@@ -8,8 +8,10 @@ from backend.api.v1.endpoints import (
     insights,
     users,
     preferences,
+    apple_health,
+    csv_import,
 )
-from backend.api.v1.endpoints.data_sources import common, withings
+from backend.api.v1.endpoints.data_sources import common, withings, oura
 
 api_router = APIRouter()
 
@@ -62,6 +64,20 @@ api_router.include_router(
     tags=["preferences"]
 )
 
+# Apple Health endpoints
+api_router.include_router(
+    apple_health.router,
+    prefix="/apple-health",
+    tags=["apple health"]
+)
+
+# CSV Import endpoints
+api_router.include_router(
+    csv_import.router,
+    prefix="/csv-import",
+    tags=["csv import"]
+)
+
 # Data sources endpoints
 api_router.include_router(
     common.router,
@@ -71,5 +87,11 @@ api_router.include_router(
 api_router.include_router(
     withings.router,
     prefix="/data-sources/withings",
-    tags=["data sources"]
+    tags=["withings"]
+)
+
+api_router.include_router(
+    oura.router,
+    prefix="/data-sources/oura",
+    tags=["oura"]
 ) 
