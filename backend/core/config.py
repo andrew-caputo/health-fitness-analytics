@@ -37,12 +37,17 @@ class Settings(BaseSettings):
     STRAVA_CLIENT_SECRET: str = os.getenv("STRAVA_CLIENT_SECRET", "")
     STRAVA_REDIRECT_URI: str = os.getenv("STRAVA_REDIRECT_URI", "http://localhost:3000/auth/strava/callback")
     
-    # MyFitnessPal API
+    # FatSecret API (replacing MyFitnessPal and Cronometer)
+    FATSECRET_CLIENT_ID: str = os.getenv("FATSECRET_CLIENT_ID", "")
+    FATSECRET_CLIENT_SECRET: str = os.getenv("FATSECRET_CLIENT_SECRET", "")
+    FATSECRET_REDIRECT_URI: str = os.getenv("FATSECRET_REDIRECT_URI", "http://localhost:3000/auth/fatsecret/callback")
+    
+    # MyFitnessPal API (DEPRECATED - API no longer available)
     MYFITNESSPAL_CLIENT_ID: str = os.getenv("MYFITNESSPAL_CLIENT_ID", "")
     MYFITNESSPAL_CLIENT_SECRET: str = os.getenv("MYFITNESSPAL_CLIENT_SECRET", "")
     MYFITNESSPAL_REDIRECT_URI: str = os.getenv("MYFITNESSPAL_REDIRECT_URI", "http://localhost:3000/auth/myfitnesspal/callback")
     
-    # Cronometer API
+    # Cronometer API (DEPRECATED - API no longer available)
     CRONOMETER_CLIENT_ID: str = os.getenv("CRONOMETER_CLIENT_ID", "")
     CRONOMETER_CLIENT_SECRET: str = os.getenv("CRONOMETER_CLIENT_SECRET", "")
     CRONOMETER_REDIRECT_URI: str = os.getenv("CRONOMETER_REDIRECT_URI", "http://localhost:3000/auth/cronometer/callback")

@@ -11,7 +11,7 @@ from backend.api.v1.endpoints import (
     apple_health,
     csv_import,
 )
-from backend.api.v1.endpoints.data_sources import common, withings, oura, fitbit, whoop, strava
+from backend.api.v1.endpoints.data_sources import common, withings, oura, fitbit, whoop, strava, fatsecret
 
 api_router = APIRouter()
 
@@ -118,4 +118,11 @@ api_router.include_router(
     strava.router,
     prefix="/data-sources/strava",
     tags=["strava"]
+)
+
+# FatSecret endpoints
+api_router.include_router(
+    fatsecret.router,
+    prefix="/data-sources/fatsecret",
+    tags=["fatsecret"]
 ) 
