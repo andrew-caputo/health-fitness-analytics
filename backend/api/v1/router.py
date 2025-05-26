@@ -11,7 +11,7 @@ from backend.api.v1.endpoints import (
     apple_health,
     csv_import,
 )
-from backend.api.v1.endpoints.data_sources import common, withings, oura, fitbit, whoop
+from backend.api.v1.endpoints.data_sources import common, withings, oura, fitbit, whoop, strava
 
 api_router = APIRouter()
 
@@ -78,32 +78,44 @@ api_router.include_router(
     tags=["csv import"]
 )
 
-# Data sources endpoints
+# Data source endpoints
 api_router.include_router(
     common.router,
-    prefix="/data-sources/common",
+    prefix="/data-sources",
     tags=["data sources"]
 )
+
+# Withings endpoints
 api_router.include_router(
     withings.router,
     prefix="/data-sources/withings",
     tags=["withings"]
 )
 
+# Oura endpoints
 api_router.include_router(
     oura.router,
     prefix="/data-sources/oura",
     tags=["oura"]
 )
 
+# Fitbit endpoints
 api_router.include_router(
     fitbit.router,
     prefix="/data-sources/fitbit",
     tags=["fitbit"]
 )
 
+# WHOOP endpoints
 api_router.include_router(
     whoop.router,
     prefix="/data-sources/whoop",
     tags=["whoop"]
+)
+
+# Strava endpoints
+api_router.include_router(
+    strava.router,
+    prefix="/data-sources/strava",
+    tags=["strava"]
 ) 

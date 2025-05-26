@@ -1,25 +1,35 @@
 # Active Context
 
 ## Current Focus
-- **Phase 3 Implementation CONTINUING**: WHOOP integration COMPLETE, moving to Strava OAuth2 integration
+- **Phase 3 Implementation CONTINUING**: Strava integration COMPLETE, moving to MyFitnessPal OAuth2 integration
 - **Backend Analysis COMPLETE**: Comprehensive structure analysis with A- grade (90/100)
 - **Production Hardening COMPLETE**: Security middleware, health checks, logging, exception handling
-- **Next Priority**: Strava OAuth2 integration following proven WHOOP/Fitbit/Oura pattern
+- **Next Priority**: MyFitnessPal OAuth2 integration following proven Strava/WHOOP/Fitbit/Oura pattern
 
-## Recent Changes (WHOOP INTEGRATION COMPLETE)
-- **✅ WHOOP OAuth2 Integration COMPLETE**: Full authentication flow, strain/recovery/sleep/workout sync
-- **✅ WHOOP API Implementation**: 5 endpoints (auth/url, auth/callback, sync, data, disconnect)
-- **✅ WHOOP Data Synchronization**: Strain scores, recovery metrics, sleep performance, workout data
-- **✅ Background Processing**: Async data sync with pagination and rate limiting
-- **✅ Token Management**: Automatic token refresh with offline scope support
-- **✅ API Routes Updated**: Total routes increased to 66 (from 61)
+## Recent Changes (STRAVA INTEGRATION COMPLETE)
+- **✅ Strava OAuth2 Integration COMPLETE**: Full authentication flow, activity data sync with comprehensive metrics
+- **✅ Strava API Implementation**: 5 endpoints (auth/url, auth/callback, sync, data, disconnect)
+- **✅ Strava Data Synchronization**: Activity data, heart rate, power, calories, exercise duration
+- **✅ Strava Rate Limiting**: Proper 429 handling with 60-second retry, 100 requests per 15 minutes
+- **✅ Strava Pagination**: Proper page-based pagination for activities endpoint
+- **✅ Strava Token Management**: 6-hour token expiration with automatic refresh
+- **✅ Strava Activity Processing**: Comprehensive activity metrics extraction and storage
+- **✅ Strava Scopes**: activity:read_all,profile:read_all for full data access
+- **✅ API Routes**: Total routes increased to 71 (from 66) - all Strava endpoints working
+- **✅ Health Check**: Application responding correctly (200 status)
 
-## Next Steps (Phase 3 Priorities - UPDATED)
-1. **✅ Fitbit Integration COMPLETE**: OAuth2 + API for activity, sleep, and body composition
-2. **✅ WHOOP Integration COMPLETE**: OAuth2 + API for strain, recovery, and sleep performance
-3. **🔄 Strava Integration**: OAuth2 + API for workout and activity data (Week 3 - CURRENT)
-4. **🔄 MyFitnessPal Integration**: OAuth2 + API for comprehensive nutrition data (Week 4)
-5. **🔄 Cronometer Integration**: OAuth2 + API for detailed nutrition tracking (Week 5)
+## Next Steps (PHASE 3 WEEK 4)
+1. **MyFitnessPal Integration**: OAuth2 authentication, nutrition data sync
+2. **Cronometer Integration**: Final OAuth2 integration (Phase 3 Week 5)
+3. **Phase 3 Completion**: All 9 data sources integrated and tested
+
+## Key Patterns Established
+- **OAuth2 Flow**: Proven pattern across Withings, Oura, Fitbit, WHOOP, Strava
+- **Token Management**: Automatic refresh with expiration handling
+- **Rate Limiting**: Source-specific rate limiting with retry logic
+- **Background Sync**: Async data synchronization with error handling
+- **Data Processing**: Unified HealthMetricUnified table for all sources
+- **API Structure**: Consistent 5-endpoint pattern (auth/url, auth/callback, sync, data, disconnect)
 
 ## Current Achievements (PHASE 3 WEEK 2 COMPLETE)
 - ✅ **Withings Integration Complete**: Full OAuth2 flow, data sync, comprehensive testing
