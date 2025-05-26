@@ -7,6 +7,7 @@ from backend.api.deps import get_db, get_current_user
 from backend.core.withings.client import WithingsClient
 from backend.core.withings.sync import WithingsSyncService
 from backend.core.withings.models import WithingsTokenData
+from backend.core.withings.state import oauth_state_manager
 from backend.core.models import DataSourceConnection, User, DataSyncLog
 
 router = APIRouter()
@@ -15,20 +16,21 @@ client = WithingsClient()
 @router.get("/auth")
 async def get_auth_url(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> Dict[str, Any]:
     """Get Withings OAuth2 authorization URL."""
-    # Generate state parameter for security
-    state = f"{current_user.id}_{datetime.utcnow().timestamp()}"
-    
-    # Store state in user's session or database
-    # TODO: Implement state storage
+    # Generate secure state parameter
+    state = oauth_state_manager.generate_state(str(current_user.id))
     
     auth_url = client.get_authorization_url(state)
-    return {"auth_url": auth_url}
+    return {"auth_url": auth_url, "state": state}
 
 @router.get("/callback")
 async def oauth_callback(code: str, state: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> Dict[str, Any]:
     """Handle OAuth2 callback from Withings."""
     # Verify state parameter
-    # TODO: Implement state verification
+    if not oauth_state_manager.verify_state(state, str(current_user.id)):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired state parameter"
+        )
     
     try:
         # Exchange code for token
@@ -51,14 +53,22 @@ async def oauth_callback(code: str, state: str, db: Session = Depends(get_db), c
             connection = DataSourceConnection(
                 user_id=current_user.id,
                 source_type="withings",
-                source_id=user_info["body"]["userid"],
-                credentials=token_data,
-                is_active=True
+                access_token=token_data["access_token"],
+                refresh_token=token_data["refresh_token"],
+                token_expires_at=datetime.fromtimestamp(
+                    datetime.utcnow().timestamp() + token_data["expires_in"]
+                ),
+                status="connected",
+                meta={"user_id": user_info["body"]["userid"]}
             )
             db.add(connection)
         else:
-            connection.credentials = token_data
-            connection.is_active = True
+            connection.access_token = token_data["access_token"]
+            connection.refresh_token = token_data["refresh_token"]
+            connection.token_expires_at = datetime.fromtimestamp(
+                datetime.utcnow().timestamp() + token_data["expires_in"]
+            )
+            connection.status = "connected"
         
         db.commit()
         
@@ -123,7 +133,7 @@ async def get_sync_status(connection_id: int, db: Session = Depends(get_db), cur
     sync_log = (
         db.query(DataSyncLog)
         .filter(DataSyncLog.connection_id == connection_id)
-        .order_by(DataSyncLog.created_at.desc())
+        .order_by(DataSyncLog.start_time.desc())
         .first()
     )
     

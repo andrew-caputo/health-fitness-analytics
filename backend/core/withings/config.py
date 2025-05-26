@@ -1,9 +1,10 @@
+import os
 from typing import Dict, Any
 
-# TODO: Move to environment variables
-WITHINGS_CLIENT_ID = "your-client-id"
-WITHINGS_CLIENT_SECRET = "your-client-secret"
-WITHINGS_REDIRECT_URI = "http://localhost:8000/api/v1/data-sources/withings/callback"
+# Withings OAuth2 configuration
+WITHINGS_CLIENT_ID = os.getenv("WITHINGS_CLIENT_ID", "your-client-id")
+WITHINGS_CLIENT_SECRET = os.getenv("WITHINGS_CLIENT_SECRET", "your-client-secret")
+WITHINGS_REDIRECT_URI = os.getenv("WITHINGS_REDIRECT_URI", "http://localhost:8000/api/v1/data-sources/withings/callback")
 
 # Withings API endpoints
 WITHINGS_API_BASE_URL = "https://wbsapi.withings.net"
