@@ -47,8 +47,14 @@ class Settings(BaseSettings):
     CRONOMETER_CLIENT_SECRET: str = os.getenv("CRONOMETER_CLIENT_SECRET", "")
     CRONOMETER_REDIRECT_URI: str = os.getenv("CRONOMETER_REDIRECT_URI", "http://localhost:3000/auth/cronometer/callback")
     
-    # CORS
-    ALLOWED_HOSTS: list = ["localhost", "127.0.0.1", "0.0.0.0"]
+    # CORS and Security
+    ALLOWED_HOSTS: List[str] = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0").split(",")
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
+    
+    # Rate Limiting
+    RATE_LIMIT_CALLS: int = int(os.getenv("RATE_LIMIT_CALLS", "100"))
+    RATE_LIMIT_PERIOD: int = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
     
     class Config:
         env_file = ".env"

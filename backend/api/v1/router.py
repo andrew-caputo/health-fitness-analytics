@@ -11,7 +11,7 @@ from backend.api.v1.endpoints import (
     apple_health,
     csv_import,
 )
-from backend.api.v1.endpoints.data_sources import common, withings, oura
+from backend.api.v1.endpoints.data_sources import common, withings, oura, fitbit
 
 api_router = APIRouter()
 
@@ -94,4 +94,10 @@ api_router.include_router(
     oura.router,
     prefix="/data-sources/oura",
     tags=["oura"]
+)
+
+api_router.include_router(
+    fitbit.router,
+    prefix="/data-sources/fitbit",
+    tags=["fitbit"]
 ) 

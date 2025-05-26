@@ -150,12 +150,14 @@ iOS/
    - Token management and refresh
    - State management for security
    - Webhook handling for real-time updates
+   - Proven implementation across Withings, Oura, and Fitbit
 
 3. **Data Processing Pipeline**
    - ETL pipeline for each data source
    - Data normalization and standardization
    - Quality scoring and validation
    - Conflict resolution algorithms
+   - Background processing with rate limiting
 
 ## Database Design
 
@@ -289,20 +291,25 @@ iOS/
 
 ## Data Source Specific Patterns
 
-### OAuth2 Sources (Withings, Oura, Fitbit, etc.)
-- Standardized authentication flow
-- Token refresh management
-- Rate limiting compliance
-- Webhook integration
+### OAuth2 Sources (Withings, Oura, Fitbit - IMPLEMENTED)
+- Standardized authentication flow with secure state management
+- Automatic token refresh with expiration handling
+- Rate limiting compliance with retry logic
+- Background data synchronization
+- Comprehensive error handling and recovery
+- Proven pattern ready for WHOOP, Strava, MyFitnessPal, Cronometer
 
-### File-Based Sources (Apple Health, CSV)
-- File upload and processing
-- Background processing queues
-- Data validation pipelines
-- Progress tracking
+### File-Based Sources (Apple Health, CSV - IMPLEMENTED)
+- Secure file upload and processing
+- Background processing queues with job tracking
+- Data validation pipelines with error reporting
+- Progress tracking and user feedback
+- XML parsing for Apple Health exports
+- Column mapping for CSV imports
 
-### API-Only Sources (Strava, MyFitnessPal)
-- RESTful API integration
-- Pagination handling
-- Data transformation layers
-- Error recovery mechanisms 
+### API-Only Sources (Strava, MyFitnessPal - READY)
+- RESTful API integration following OAuth2 pattern
+- Pagination handling for large datasets
+- Data transformation layers for unified schema
+- Error recovery mechanisms with intelligent retry
+- Rate limiting compliance per source requirements 
