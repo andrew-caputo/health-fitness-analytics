@@ -9,10 +9,17 @@ src/
 │   ├── common/
 │   ├── dashboard/
 │   ├── charts/
+│   ├── data-sources/
 │   └── ai-assistant/
 ├── hooks/
 ├── services/
+│   ├── api/
+│   ├── auth/
+│   └── data-sources/
 ├── store/
+│   ├── user/
+│   ├── health-data/
+│   └── preferences/
 └── utils/
 ```
 
@@ -20,16 +27,46 @@ src/
 ```
 backend/
 ├── api/
-│   ├── routes/
-│   ├── middleware/
-│   └── validators/
+│   ├── v1/
+│   │   ├── endpoints/
+│   │   │   ├── data_sources/
+│   │   │   │   ├── apple_health/
+│   │   │   │   ├── withings/
+│   │   │   │   ├── oura/
+│   │   │   │   ├── myfitnesspal/
+│   │   │   │   ├── fitbit/
+│   │   │   │   ├── strava/
+│   │   │   │   ├── whoop/
+│   │   │   │   ├── cronometer/
+│   │   │   │   └── csv/
+│   │   │   ├── auth/
+│   │   │   ├── users/
+│   │   │   ├── health_metrics/
+│   │   │   └── preferences/
+│   │   ├── middleware/
+│   │   └── validators/
 ├── core/
+│   ├── data_sources/
+│   │   ├── common/
+│   │   ├── apple_health/
+│   │   ├── withings/
+│   │   ├── oura/
+│   │   ├── myfitnesspal/
+│   │   ├── fitbit/
+│   │   ├── strava/
+│   │   ├── whoop/
+│   │   ├── cronometer/
+│   │   └── csv/
 │   ├── services/
+│   │   ├── aggregation/
+│   │   ├── sync/
+│   │   └── preferences/
 │   ├── models/
 │   └── utils/
 ├── data/
 │   ├── collectors/
 │   ├── processors/
+│   ├── aggregators/
 │   └── analyzers/
 └── ai/
     ├── models/
@@ -37,124 +74,235 @@ backend/
     └── processors/
 ```
 
+### Mobile App Architecture (iOS)
+```
+iOS/
+├── Views/
+│   ├── Dashboard/
+│   ├── DataSources/
+│   ├── Settings/
+│   └── Onboarding/
+├── Services/
+│   ├── HealthKit/
+│   ├── API/
+│   └── Sync/
+├── Models/
+│   ├── HealthData/
+│   ├── User/
+│   └── Preferences/
+└── Utils/
+```
+
 ## Design Patterns
+
+### Multi-Source Data Integration Patterns
+
+1. **Data Source Abstraction**
+   - Common interface for all data sources
+   - Standardized data models across sources
+   - Unified authentication flow pattern
+   - Consistent error handling
+
+2. **User Preference Management**
+   - Category-based source selection
+   - Priority and fallback configuration
+   - Real-time preference updates
+   - Conflict resolution rules
+
+3. **Data Aggregation Strategy**
+   - Primary/secondary source hierarchy
+   - Data quality scoring
+   - Temporal conflict resolution
+   - Cross-source validation
 
 ### Frontend Patterns
 1. **Component Composition**
    - Atomic design principles
-   - Reusable component library
-   - Container/Presenter pattern
+   - Data source agnostic components
+   - Reusable visualization components
+   - Source attribution display
 
 2. **State Management**
-   - React Query for server state
-   - Context API for global state
-   - Local state for component-specific data
+   - React Query for multi-source server state
+   - Context API for user preferences
+   - Local state for UI interactions
+   - Optimistic updates for source switching
 
 3. **Data Flow**
    - Unidirectional data flow
-   - Custom hooks for data fetching
-   - Error boundary implementation
+   - Custom hooks for multi-source data fetching
+   - Error boundary implementation per source
+   - Loading states for each data source
 
 ### Backend Patterns
-1. **Service Layer**
-   - Repository pattern for data access
-   - Service layer for business logic
-   - Factory pattern for service creation
+1. **Multi-Source Service Layer**
+   - Repository pattern for each data source
+   - Service layer for business logic aggregation
+   - Factory pattern for source-specific services
+   - Strategy pattern for data source selection
    - Use Poetry for dependency management in Docker
-   - Do not mount over /app/backend in production to avoid overwriting installed dependencies
+   - Do not mount over /app/backend in production
    - Enforce absolute imports for all internal modules
-   - Run linter (ruff) regularly; address critical issues before endpoint testing
+   - Run linter (ruff) regularly
 
-2. **Data Processing**
-   - Pipeline pattern for data processing
-   - Strategy pattern for different data sources
-   - Observer pattern for real-time updates
+2. **OAuth2 Integration Pattern**
+   - Standardized OAuth2 flow for all sources
+   - Token management and refresh
+   - State management for security
+   - Webhook handling for real-time updates
 
-3. **API Design**
-   - RESTful endpoints
-   - GraphQL for complex queries
-   - WebSocket for real-time features
+3. **Data Processing Pipeline**
+   - ETL pipeline for each data source
+   - Data normalization and standardization
+   - Quality scoring and validation
+   - Conflict resolution algorithms
 
 ## Database Design
 
-### Schema Patterns
-1. **Time Series Data**
-   - TimescaleDB for metrics
-   - Partitioning by time
-   - Efficient querying patterns
+### Multi-Source Schema Patterns
+1. **User Preferences**
+   ```sql
+   user_data_source_preferences (
+     user_id, activity_source, sleep_source,
+     nutrition_source, body_composition_source,
+     priority_rules, conflict_resolution
+   )
+   ```
 
-2. **User Data**
-   - Normalized user tables
-   - Secure credential storage
-   - Audit logging
+2. **Source-Specific Tables**
+   ```sql
+   withings_data, oura_data, fitbit_data,
+   strava_data, whoop_data, myfitnesspal_data,
+   cronometer_data, apple_health_data, csv_data
+   ```
 
-3. **Analytics Data**
-   - Aggregated metrics
-   - Cached results
-   - Materialized views
+3. **Unified Health Metrics**
+   ```sql
+   health_metrics (
+     user_id, metric_type, value, timestamp,
+     data_source, quality_score, is_primary
+   )
+   ```
+
+### Time Series Data Patterns
+1. **Multi-Source TimescaleDB**
+   - Partitioning by time and source
+   - Efficient cross-source queries
+   - Source-specific indexing
+
+2. **Data Aggregation Tables**
+   - Pre-computed multi-source metrics
+   - Conflict-resolved data views
+   - Performance optimization
 
 ## Security Patterns
 
-### Authentication
-1. **OAuth2 Implementation**
-   - Apple Health integration
-   - Withings API integration
-   - JWT token management
+### Multi-Source Authentication
+1. **OAuth2 Management**
+   - Separate OAuth2 flows for each source
+   - Token isolation and encryption
+   - Refresh token rotation
+   - Scope management per source
 
-2. **Authorization**
-   - Role-based access control
-   - Resource-based permissions
-   - API key management
+2. **Data Source Authorization**
+   - Granular permissions per source
+   - User consent management
+   - Data access auditing
+   - Source-specific rate limiting
 
-### Data Security
-1. **Encryption**
-   - Data at rest
-   - Data in transit
-   - Key management
-
-2. **Privacy**
-   - Data anonymization
-   - Access logging
-   - Compliance controls
+### Privacy & Compliance
+1. **Data Isolation**
+   - Source-specific data encryption
+   - Selective data sharing
+   - User-controlled data retention
+   - GDPR compliance per source
 
 ## Performance Patterns
 
-### Caching Strategy
-1. **Multi-level Cache**
-   - Redis for hot data
-   - CDN for static assets
-   - Browser caching
+### Multi-Source Optimization
+1. **Parallel Data Fetching**
+   - Concurrent API calls to multiple sources
+   - Async processing pipelines
+   - Source-specific rate limiting
+   - Intelligent retry mechanisms
 
-2. **Query Optimization**
-   - Indexed queries
-   - Materialized views
-   - Query result caching
+2. **Caching Strategy**
+   - Source-specific cache layers
+   - Cross-source data correlation cache
+   - User preference caching
+   - Intelligent cache invalidation
+
+3. **Data Aggregation Optimization**
+   - Pre-computed cross-source metrics
+   - Materialized views for common queries
+   - Incremental aggregation updates
+   - Source priority-based processing
 
 ### Scaling Strategy
 1. **Horizontal Scaling**
-   - Stateless services
-   - Load balancing
-   - Auto-scaling
+   - Source-specific service scaling
+   - Load balancing per data source
+   - Auto-scaling based on source load
+   - Geographic distribution
 
 2. **Data Partitioning**
-   - Time-based partitioning
    - User-based sharding
-   - Read/write splitting
+   - Source-based partitioning
+   - Time-based partitioning
+   - Read/write splitting per source
+
+## Mobile Integration Patterns
+
+### iOS HealthKit Integration
+1. **Native Data Access**
+   - HealthKit framework integration
+   - Background sync capabilities
+   - Permission management
+   - Data type mapping
+
+2. **Real-Time Sync**
+   - Push notification triggers
+   - Background app refresh
+   - Conflict resolution on device
+   - Offline data handling
 
 ## Monitoring Patterns
 
-### Observability
-1. **Logging**
-   - Structured logging
-   - Log aggregation
-   - Error tracking
+### Multi-Source Observability
+1. **Source-Specific Monitoring**
+   - API health checks per source
+   - Sync success rates
+   - Data quality metrics
+   - Error tracking by source
 
-2. **Metrics**
-   - Performance metrics
-   - Business metrics
-   - Health checks
+2. **Cross-Source Analytics**
+   - Data correlation monitoring
+   - User preference analytics
+   - Source adoption metrics
+   - Performance comparison
 
-3. **Tracing**
-   - Distributed tracing
-   - Request tracking
-   - Performance profiling 
+3. **User Experience Monitoring**
+   - Source selection patterns
+   - Sync satisfaction metrics
+   - Mobile app usage analytics
+   - Cross-platform behavior tracking
+
+## Data Source Specific Patterns
+
+### OAuth2 Sources (Withings, Oura, Fitbit, etc.)
+- Standardized authentication flow
+- Token refresh management
+- Rate limiting compliance
+- Webhook integration
+
+### File-Based Sources (Apple Health, CSV)
+- File upload and processing
+- Background processing queues
+- Data validation pipelines
+- Progress tracking
+
+### API-Only Sources (Strava, MyFitnessPal)
+- RESTful API integration
+- Pagination handling
+- Data transformation layers
+- Error recovery mechanisms 

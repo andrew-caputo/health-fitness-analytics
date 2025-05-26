@@ -1,7 +1,7 @@
 # Health & Fitness Analytics Platform
 
 ## Project Overview
-A comprehensive health and fitness tracking application that integrates data from multiple sources to provide AI-powered insights and recommendations.
+A comprehensive health and fitness tracking application that integrates data from multiple sources to provide AI-powered insights and recommendations. The platform supports user-selectable data sources across four key health categories: Activity, Sleep, Nutrition, and Body Composition.
 
 ## Documentation
 - All project documentation is managed in markdown under `docs/`.
@@ -11,52 +11,62 @@ A comprehensive health and fitness tracking application that integrates data fro
 
 ## Core Requirements
 
-### Data Sources
-1. Apple Health
-   - Steps
-   - Active energy
-   - Resting energy
-   - Exercise minutes
-   - Sleep
-   - Cardio fitness
-   - Heart rate
-   - Resting heart rate
+### Multi-Source Data Integration
+The platform integrates with 9 major health data sources, allowing users to select their preferred source for each health category:
 
-2. Withings
-   - Weight
-   - Body composition
+#### Data Source Coverage Matrix
+| Data Source | Activity | Sleep | Nutrition | Body Composition |
+|-------------|----------|-------|-----------|------------------|
+| **Apple Health** | ✅ Steps, Heart Rate, Workouts, Active Energy | ✅ Sleep Analysis, Time in Bed | ✅ Dietary Energy, Water | ✅ Weight, Body Fat %, BMI |
+| **Withings** | ✅ Steps, Heart Rate, Activities | ✅ Sleep Duration, Sleep Stages | ❌ | ✅ Weight, Body Fat %, Muscle Mass, BMI |
+| **CSV** | ✅ Custom Activity Data | ✅ Custom Sleep Data | ✅ Custom Nutrition Data | ✅ Custom Body Metrics |
+| **Oura** | ✅ Steps, Heart Rate, Activity Score | ✅ Sleep Score, Sleep Stages, REM/Deep Sleep | ❌ | ❌ |
+| **MyFitnessPal** | ✅ Exercise Logging | ❌ | ✅ Comprehensive Food Database, Macros, Micros | ❌ |
+| **Fitbit** | ✅ Steps, Heart Rate, Active Minutes, Workouts | ✅ Sleep Stages, Sleep Score | ❌ | ✅ Weight, Body Fat % |
+| **Strava** | ✅ Workouts, Heart Rate, Power, Pace | ❌ | ❌ | ❌ |
+| **Whoop** | ✅ Strain Score, Heart Rate, Workouts | ✅ Sleep Performance, Recovery Score | ❌ | ✅ Height, Weight, Max HR |
+| **Cronometer** | ❌ | ❌ | ✅ Comprehensive Nutrition (84+ nutrients), Macros, Micros | ✅ Weight, Body Fat % |
 
-3. CSV Import
-   - Calories
-   - Carbohydrates
-   - Protein
-   - Fats
+### User-Selectable Data Sources
+Users can choose their preferred data source for each health category:
+- **Activity Source**: Apple Health, Oura, Strava, Whoop, Fitbit, Withings, CSV
+- **Sleep Source**: Apple Health, Oura, Whoop, Fitbit, Withings, CSV
+- **Nutrition Source**: MyFitnessPal, Cronometer, Apple Health, CSV
+- **Body Composition Source**: Withings, Apple Health, Fitbit, Cronometer, Whoop, CSV
 
 ### Core Features
-1. Data Integration
-   - Automated daily sync with Apple Health
-   - Real-time Withings data updates
-   - CSV data import with validation
-   - Data quality monitoring
+1. **Multi-Source Data Integration**
+   - OAuth2 authentication for all supported APIs
+   - Real-time data synchronization
+   - User preference management for source selection
+   - Conflict resolution and data prioritization
+   - CSV import with validation for custom data
 
-2. Analytics & Visualization
-   - Interactive charts for all metrics
-   - Trend analysis
-   - Correlation analysis
+2. **Analytics & Visualization**
+   - Interactive charts for all metrics across sources
+   - Cross-source trend analysis
+   - Correlation analysis between different data types
    - Impact analysis of activity on body composition
-   - Macro impact analysis on weight and composition
+   - Comprehensive health insights dashboard
 
-3. AI Assistant
+3. **AI Assistant**
    - Natural language conversation interface
-   - Data-driven insights
-   - Goal setting and tracking
-   - Personalized recommendations
-   - Scientific backing for advice
+   - Multi-source data-driven insights
+   - Goal setting and tracking across all categories
+   - Personalized recommendations based on complete health picture
+   - Scientific backing for advice using comprehensive data
+
+4. **Mobile Application (iOS)**
+   - Native iOS app with HealthKit integration
+   - Data source selection and management
+   - Real-time sync capabilities
+   - Push notifications for goals and insights
 
 ## Technical Stack
 
 ### Frontend
-- React 18
+- React 18 (Web Dashboard)
+- Swift/SwiftUI (iOS Mobile App)
 - TypeScript
 - Tailwind CSS
 - Chart.js/D3.js
@@ -70,11 +80,14 @@ A comprehensive health and fitness tracking application that integrates data fro
 - Pandas
 - Scikit-learn
 - OpenAI API
+- OAuth2 integrations for all data sources
 
 ### Database
 - PostgreSQL
 - TimescaleDB
 - Redis
+- User preference management
+- Multi-source data aggregation
 
 ### Cloud Infrastructure (GCP)
 - Cloud Run
@@ -85,18 +98,22 @@ A comprehensive health and fitness tracking application that integrates data fro
 - Cloud CDN
 
 ## Project Goals
-1. Create a seamless data integration experience
-2. Provide actionable insights through AI
-3. Deliver an intuitive and engaging user interface
-4. Ensure data security and privacy
-5. Maintain high performance and reliability
-6. Achieve robust containerization and dependency management for backend services
-7. Enforce code quality and maintainability with linting and best practices
-8. Maintain comprehensive, browsable documentation for all project aspects
+1. Create a universal health data integration platform
+2. Provide users flexibility to choose their preferred devices/apps
+3. Deliver comprehensive insights from multiple data sources
+4. Build an intuitive mobile-first experience
+5. Ensure data security and privacy across all integrations
+6. Maintain high performance with multiple data sources
+7. Achieve robust containerization and dependency management
+8. Enforce code quality and maintainability with linting and best practices
+9. Maintain comprehensive, browsable documentation for all integrations
 
 ## Success Metrics
-1. Data accuracy and completeness
-2. User engagement with AI assistant
-3. System performance and reliability
-4. User satisfaction and retention
-5. Insight quality and usefulness 
+1. Support for 9 major health data sources
+2. 100% coverage of Activity, Sleep, Nutrition, Body Composition categories
+3. User adoption across multiple data source combinations
+4. Data accuracy and completeness from all sources
+5. User engagement with comprehensive health insights
+6. System performance with multi-source data aggregation
+7. User satisfaction with flexible source selection
+8. Mobile app adoption and usage rates 
