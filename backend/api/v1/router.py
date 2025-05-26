@@ -7,6 +7,7 @@ from backend.api.v1.endpoints import (
     health_metrics,
     insights,
     users,
+    preferences,
 )
 from backend.api.v1.endpoints.data_sources import common, withings
 
@@ -52,6 +53,13 @@ api_router.include_router(
     chat.router,
     prefix="/chat",
     tags=["chat"]
+)
+
+# User preferences endpoints
+api_router.include_router(
+    preferences.router,
+    prefix="/preferences",
+    tags=["preferences"]
 )
 
 # Data sources endpoints
