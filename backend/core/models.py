@@ -13,6 +13,7 @@ class User(Base):
 
     id = Column(PGUUID, primary_key=True, default=uuid4)
     email = Column(String(255), unique=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 

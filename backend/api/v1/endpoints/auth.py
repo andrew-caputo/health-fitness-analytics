@@ -35,7 +35,7 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)) -> Any:
     
     user = User(
         email=user_in.email,
-        password=pwd_context.hash(user_in.password),
+        hashed_password=pwd_context.hash(user_in.password),
     )
     db.add(user)
     db.commit()
@@ -48,7 +48,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     OAuth2 compatible token login, get an access token for future requests.
     """
     user = db.query(User).filter(User.email == form_data.username).first()
-    if not user or not pwd_context.verify(form_data.password, user.password):
+    if not user or not pwd_context.verify(form_data.password, getattr(user, "hashed_password", None)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

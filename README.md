@@ -1,4 +1,4 @@
-[![Documentation Status](https://img.shields.io/badge/docs-online-brightgreen)](https://<your-github-username>.github.io/<your-repo-name>/)
+[![Documentation Status](https://img.shields.io/badge/docs-online-brightgreen)](https://<andrew-caputo>.github.io/<health-fitness-analytics>/)
 
 # Health & Fitness Analytics
 
@@ -13,7 +13,7 @@ A cloud-based analytics platform integrating Apple Health, Withings, and CSV nut
 ## Documentation
 
 Full documentation is available in the [docs/](docs/) directory and online:
-- [Online Docs](https://<your-github-username>.github.io/<your-repo-name>/)
+- [Online Docs](https://<andrew-caputo>.github.io/<health-fitness-analytics>/)
 - Architecture
 - Backend & API
 - Frontend
