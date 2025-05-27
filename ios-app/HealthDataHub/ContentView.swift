@@ -29,21 +29,29 @@ struct ContentView: View {
                 }
                 .tag(0)
             
+            // Charts Tab
+            HealthChartsView()
+                .tabItem {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                    Text("Charts")
+                }
+                .tag(1)
+            
             // Connected Apps Tab
             ConnectedAppsDetailView()
                 .tabItem {
                     Image(systemName: "app.connected.to.app.below.fill")
                     Text("Apps")
                 }
-                .tag(1)
-            
-            // Sync Status Tab
-            SyncStatusView()
-                .tabItem {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                    Text("Sync")
-                }
                 .tag(2)
+            
+            // Trends Tab
+            TrendsAnalysisView()
+                .tabItem {
+                    Image(systemName: "chart.bar.xaxis")
+                    Text("Trends")
+                }
+                .tag(3)
             
             // Settings Tab
             SettingsView()
@@ -51,7 +59,7 @@ struct ContentView: View {
                     Image(systemName: "gear")
                     Text("Settings")
                 }
-                .tag(3)
+                .tag(4)
         }
         .onAppear {
             setupInitialData()

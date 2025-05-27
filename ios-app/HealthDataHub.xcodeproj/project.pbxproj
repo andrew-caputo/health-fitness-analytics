@@ -16,6 +16,8 @@
 		A1234567890123456789016A /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789016B /* LoginView.swift */; };
 		A1234567890123456789017A /* ConnectedAppsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789017B /* ConnectedAppsDetailView.swift */; };
 		A1234567890123456789018A /* AppPermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789018B /* AppPermissionsView.swift */; };
+		A1234567890123456789019A /* HealthChartsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789019B /* HealthChartsView.swift */; };
+		A1234567890123456789020A /* TrendsAnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789020B /* TrendsAnalysisView.swift */; };
 		A1234567890123456789013E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789013F /* Assets.xcassets */; };
 		A1234567890123456789014A /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789014B /* Preview Assets.xcassets */; };
 		A1234567890123456789014C /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1234567890123456789014D /* HealthKit.framework */; };
@@ -32,6 +34,8 @@
 		A1234567890123456789016B /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		A1234567890123456789017B /* ConnectedAppsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectedAppsDetailView.swift; sourceTree = "<group>"; };
 		A1234567890123456789018B /* AppPermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPermissionsView.swift; sourceTree = "<group>"; };
+		A1234567890123456789019B /* HealthChartsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthChartsView.swift; sourceTree = "<group>"; };
+		A1234567890123456789020B /* TrendsAnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsAnalysisView.swift; sourceTree = "<group>"; };
 		A1234567890123456789013F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1234567890123456789014B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A1234567890123456789014D /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
@@ -91,6 +95,8 @@
 				A1234567890123456789016B /* LoginView.swift */,
 				A1234567890123456789017B /* ConnectedAppsDetailView.swift */,
 				A1234567890123456789018B /* AppPermissionsView.swift */,
+				A1234567890123456789019B /* HealthChartsView.swift */,
+				A1234567890123456789020B /* TrendsAnalysisView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -207,6 +213,8 @@
 				A1234567890123456789016A /* LoginView.swift in Sources */,
 				A1234567890123456789017A /* ConnectedAppsDetailView.swift in Sources */,
 				A1234567890123456789018A /* AppPermissionsView.swift in Sources */,
+				A1234567890123456789019A /* HealthChartsView.swift in Sources */,
+				A1234567890123456789020A /* TrendsAnalysisView.swift in Sources */,
 				A1234567890123456789012A /* HealthDataHubApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
