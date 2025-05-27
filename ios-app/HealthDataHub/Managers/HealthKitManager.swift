@@ -9,6 +9,7 @@ class HealthKitManager: ObservableObject {
     @Published var isAuthorized = false
     @Published var authorizationStatus: HKAuthorizationStatus = .notDetermined
     @Published var connectedApps: [String] = []
+    @Published var detailedConnectedApps: [ConnectedHealthApp] = []
     @Published var lastSyncDate: Date?
     @Published var syncStatus: SyncStatus = .idle
     
@@ -351,6 +352,153 @@ class HealthKitManager: ObservableObject {
             "Headspace",
             "Lose It!",
             "Garmin Connect"
+        ]
+    }
+    
+    func updateDetailedConnectedApps() {
+        // In a real implementation, this would analyze HealthKit data sources
+        // to identify which apps are actually writing data
+        detailedConnectedApps = createMockConnectedApps()
+    }
+    
+    private func createMockConnectedApps() -> [ConnectedHealthApp] {
+        return [
+            ConnectedHealthApp(
+                name: "MyFitnessPal",
+                bundleIdentifier: "com.myfitnesspal.app",
+                iconURL: nil,
+                description: "Nutrition tracking and calorie counting app",
+                categories: ["nutrition"],
+                isActive: true,
+                lastSyncDate: Date().addingTimeInterval(-3600), // 1 hour ago
+                dataPointsCount: 1247,
+                recentDataPoints: [
+                    ConnectedHealthApp.DataPoint(
+                        type: "Dietary Energy",
+                        value: "2,150 cal",
+                        timestamp: "2 hours ago"
+                    ),
+                    ConnectedHealthApp.DataPoint(
+                        type: "Protein",
+                        value: "125 g",
+                        timestamp: "2 hours ago"
+                    ),
+                    ConnectedHealthApp.DataPoint(
+                        type: "Carbohydrates",
+                        value: "280 g",
+                        timestamp: "2 hours ago"
+                    )
+                ]
+            ),
+            
+            ConnectedHealthApp(
+                name: "Nike Run Club",
+                bundleIdentifier: "com.nike.runclub",
+                iconURL: nil,
+                description: "Running and fitness tracking app",
+                categories: ["activity"],
+                isActive: true,
+                lastSyncDate: Date().addingTimeInterval(-1800), // 30 minutes ago
+                dataPointsCount: 892,
+                recentDataPoints: [
+                    ConnectedHealthApp.DataPoint(
+                        type: "Workout",
+                        value: "5.2 km run",
+                        timestamp: "30 minutes ago"
+                    ),
+                    ConnectedHealthApp.DataPoint(
+                        type: "Active Energy",
+                        value: "420 cal",
+                        timestamp: "30 minutes ago"
+                    ),
+                    ConnectedHealthApp.DataPoint(
+                        type: "Heart Rate",
+                        value: "165 bpm avg",
+                        timestamp: "30 minutes ago"
+                    )
+                ]
+            ),
+            
+            ConnectedHealthApp(
+                name: "Sleep Cycle",
+                bundleIdentifier: "com.northcube.sleepcycle",
+                iconURL: nil,
+                description: "Sleep tracking and smart alarm app",
+                categories: ["sleep"],
+                isActive: true,
+                lastSyncDate: Date().addingTimeInterval(-28800), // 8 hours ago
+                dataPointsCount: 456,
+                recentDataPoints: [
+                    ConnectedHealthApp.DataPoint(
+                        type: "Sleep Analysis",
+                        value: "7h 32m",
+                        timestamp: "8 hours ago"
+                    ),
+                    ConnectedHealthApp.DataPoint(
+                        type: "Sleep Quality",
+                        value: "85%",
+                        timestamp: "8 hours ago"
+                    )
+                ]
+            ),
+            
+            ConnectedHealthApp(
+                name: "Apple Watch",
+                bundleIdentifier: "com.apple.watch",
+                iconURL: nil,
+                description: "Apple's wearable device for health and fitness",
+                categories: ["activity", "heart", "body"],
+                isActive: true,
+                lastSyncDate: Date().addingTimeInterval(-300), // 5 minutes ago
+                dataPointsCount: 3421,
+                recentDataPoints: [
+                    ConnectedHealthApp.DataPoint(
+                        type: "Steps",
+                        value: "8,247",
+                        timestamp: "5 minutes ago"
+                    ),
+                    ConnectedHealthApp.DataPoint(
+                        type: "Heart Rate",
+                        value: "72 bpm",
+                        timestamp: "5 minutes ago"
+                    ),
+                    ConnectedHealthApp.DataPoint(
+                        type: "Active Energy",
+                        value: "1,890 cal",
+                        timestamp: "5 minutes ago"
+                    )
+                ]
+            ),
+            
+            ConnectedHealthApp(
+                name: "Headspace",
+                bundleIdentifier: "com.headspace.app",
+                iconURL: nil,
+                description: "Meditation and mindfulness app",
+                categories: ["mindfulness"],
+                isActive: true,
+                lastSyncDate: Date().addingTimeInterval(-7200), // 2 hours ago
+                dataPointsCount: 89,
+                recentDataPoints: [
+                    ConnectedHealthApp.DataPoint(
+                        type: "Mindful Session",
+                        value: "10 minutes",
+                        timestamp: "2 hours ago"
+                    )
+                ]
+            ),
+            
+            ConnectedHealthApp(
+                name: "Cronometer",
+                bundleIdentifier: "com.cronometer.app",
+                iconURL: nil,
+                description: "Comprehensive nutrition tracking app",
+                categories: ["nutrition"],
+                isActive: false,
+                lastSyncDate: Date().addingTimeInterval(-172800), // 2 days ago
+                dataPointsCount: 234,
+                recentDataPoints: []
+            )
         ]
     }
     

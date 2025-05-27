@@ -183,25 +183,55 @@ class BackgroundSyncManager: ObservableObject {
     // MARK: - Backend API Sync
     
     private func syncWithBackend(_ data: [[String: Any]]) async -> Bool {
-        // This would typically make HTTP requests to your backend API
-        // For now, we'll simulate the sync process
-        
         guard !data.isEmpty else {
             print("No data to sync")
             return true
         }
         
+        // Check if user is authenticated
+        guard NetworkManager.shared.isAuthenticated else {
+            print("User not authenticated, skipping sync")
+            return false
+        }
+        
         do {
-            // Simulate API call delay
-            try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+            // Convert data to HealthMetricUnified format
+            let metrics = data.compactMap { dict -> HealthDataMapper.HealthMetricUnified? in
+                guard let metricType = dict["metric_type"] as? String,
+                      let value = dict["value"] as? Double,
+                      let unit = dict["unit"] as? String,
+                      let sourceType = dict["source_type"] as? String,
+                      let recordedAtString = dict["recorded_at"] as? String,
+                      let recordedAt = ISO8601DateFormatter().date(from: recordedAtString) else {
+                    return nil
+                }
+                
+                return HealthDataMapper.HealthMetricUnified(
+                    metricType: metricType,
+                    value: value,
+                    unit: unit,
+                    sourceType: sourceType,
+                    recordedAt: recordedAt,
+                    sourceApp: dict["source_app"] as? String,
+                    deviceName: dict["device_name"] as? String,
+                    metadata: dict["metadata"] as? [String: Any]
+                )
+            }
             
-            // In a real implementation, you would:
-            // 1. Get authentication token
-            // 2. Make POST request to /api/v1/mobile/healthkit/batch-upload
-            // 3. Handle response and errors
+            // Upload to backend
+            let response = try await NetworkManager.shared.uploadHealthKitData(metrics)
             
-            print("Successfully synced \(data.count) health metrics")
-            return true
+            print("Successfully synced \(response.processed_count) health metrics")
+            print("Sync ID: \(response.sync_id)")
+            
+            if response.failed_count > 0 {
+                print("Failed to sync \(response.failed_count) metrics")
+                if let errors = response.errors {
+                    print("Errors: \(errors)")
+                }
+            }
+            
+            return response.failed_count == 0
             
         } catch {
             print("Backend sync failed: \(error.localizedDescription)")

@@ -12,6 +12,10 @@
 		A1234567890123456789012E /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789012F /* HealthKitManager.swift */; };
 		A1234567890123456789013A /* HealthDataMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789013B /* HealthDataMapper.swift */; };
 		A1234567890123456789013C /* BackgroundSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789013D /* BackgroundSyncManager.swift */; };
+		A1234567890123456789015E /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789015F /* NetworkManager.swift */; };
+		A1234567890123456789016A /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789016B /* LoginView.swift */; };
+		A1234567890123456789017A /* ConnectedAppsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789017B /* ConnectedAppsDetailView.swift */; };
+		A1234567890123456789018A /* AppPermissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789018B /* AppPermissionsView.swift */; };
 		A1234567890123456789013E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789013F /* Assets.xcassets */; };
 		A1234567890123456789014A /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1234567890123456789014B /* Preview Assets.xcassets */; };
 		A1234567890123456789014C /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1234567890123456789014D /* HealthKit.framework */; };
@@ -24,6 +28,10 @@
 		A1234567890123456789012F /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
 		A1234567890123456789013B /* HealthDataMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataMapper.swift; sourceTree = "<group>"; };
 		A1234567890123456789013D /* BackgroundSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSyncManager.swift; sourceTree = "<group>"; };
+		A1234567890123456789015F /* NetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
+		A1234567890123456789016B /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		A1234567890123456789017B /* ConnectedAppsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectedAppsDetailView.swift; sourceTree = "<group>"; };
+		A1234567890123456789018B /* AppPermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPermissionsView.swift; sourceTree = "<group>"; };
 		A1234567890123456789013F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1234567890123456789014B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A1234567890123456789014D /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
@@ -64,6 +72,7 @@
 			children = (
 				A1234567890123456789012F /* HealthKitManager.swift */,
 				A1234567890123456789013D /* BackgroundSyncManager.swift */,
+				A1234567890123456789015F /* NetworkManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -79,6 +88,9 @@
 		A1234567890123456789015C /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				A1234567890123456789016B /* LoginView.swift */,
+				A1234567890123456789017B /* ConnectedAppsDetailView.swift */,
+				A1234567890123456789018B /* AppPermissionsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -191,6 +203,10 @@
 				A1234567890123456789012E /* HealthKitManager.swift in Sources */,
 				A1234567890123456789013A /* HealthDataMapper.swift in Sources */,
 				A1234567890123456789013C /* BackgroundSyncManager.swift in Sources */,
+				A1234567890123456789015E /* NetworkManager.swift in Sources */,
+				A1234567890123456789016A /* LoginView.swift in Sources */,
+				A1234567890123456789017A /* ConnectedAppsDetailView.swift in Sources */,
+				A1234567890123456789018A /* AppPermissionsView.swift in Sources */,
 				A1234567890123456789012A /* HealthDataHubApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -4,10 +4,22 @@ import HealthKit
 struct ContentView: View {
     @EnvironmentObject var healthKitManager: HealthKitManager
     @EnvironmentObject var backgroundSyncManager: BackgroundSyncManager
+    @StateObject private var networkManager = NetworkManager.shared
     
     @State private var selectedTab = 0
     
     var body: some View {
+        Group {
+            if networkManager.isAuthenticated {
+                authenticatedView
+            } else {
+                LoginView()
+            }
+        }
+        .environmentObject(networkManager)
+    }
+    
+    private var authenticatedView: some View {
         TabView(selection: $selectedTab) {
             // Dashboard Tab
             DashboardView()
@@ -18,7 +30,7 @@ struct ContentView: View {
                 .tag(0)
             
             // Connected Apps Tab
-            ConnectedAppsView()
+            ConnectedAppsDetailView()
                 .tabItem {
                     Image(systemName: "app.connected.to.app.below.fill")
                     Text("Apps")
@@ -420,6 +432,9 @@ struct SyncStatusView: View {
 struct SettingsView: View {
     @EnvironmentObject var healthKitManager: HealthKitManager
     @EnvironmentObject var backgroundSyncManager: BackgroundSyncManager
+    @EnvironmentObject var networkManager: NetworkManager
+    
+    @State private var showLogoutAlert = false
     
     var body: some View {
         NavigationView {
@@ -460,11 +475,39 @@ struct SettingsView: View {
                         Text("1.0.0")
                             .foregroundColor(.secondary)
                     }
+                    
+                    if let user = networkManager.currentUser {
+                        HStack {
+                            Text("Account")
+                            Spacer()
+                            Text(user.email)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 } header: {
                     Text("About")
                 }
+                
+                Section {
+                    Button("Sign Out") {
+                        showLogoutAlert = true
+                    }
+                    .foregroundColor(.red)
+                } header: {
+                    Text("Account")
+                }
             }
             .navigationTitle("Settings")
+            .alert("Sign Out", isPresented: $showLogoutAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Sign Out", role: .destructive) {
+                    Task {
+                        await networkManager.logout()
+                    }
+                }
+            } message: {
+                Text("Are you sure you want to sign out?")
+            }
         }
     }
 }

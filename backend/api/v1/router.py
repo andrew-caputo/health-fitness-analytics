@@ -12,6 +12,7 @@ from backend.api.v1.endpoints import (
     csv_import,
 )
 from backend.api.v1.endpoints.data_sources import common, withings, oura, fitbit, whoop, strava, fatsecret
+from backend.api.v1.endpoints.mobile import auth as mobile_auth, healthkit, user as mobile_user
 
 api_router = APIRouter()
 
@@ -125,4 +126,25 @@ api_router.include_router(
     fatsecret.router,
     prefix="/data-sources/fatsecret",
     tags=["fatsecret"]
+)
+
+# Mobile API endpoints
+api_router.include_router(
+    mobile_auth.router,
+    prefix="/mobile/auth",
+    tags=["mobile auth"]
+)
+
+# Mobile HealthKit endpoints
+api_router.include_router(
+    healthkit.router,
+    prefix="/mobile/healthkit",
+    tags=["mobile healthkit"]
+)
+
+# Mobile User endpoints
+api_router.include_router(
+    mobile_user.router,
+    prefix="/mobile/user",
+    tags=["mobile user"]
 ) 
