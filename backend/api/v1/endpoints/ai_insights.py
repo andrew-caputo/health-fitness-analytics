@@ -13,9 +13,12 @@ import logging
 
 from core.database import get_db
 from backend.api.deps import get_current_user
-from core.models import User
+from core.models import User, HealthData
 from ai.health_insights_engine import health_insights_engine, HealthInsight, HealthScore
 from pydantic import BaseModel
+from backend.ai.goal_optimizer import GoalOptimizer, GoalDifficulty
+from backend.ai.achievement_engine import AchievementEngine
+from backend.ai.health_coach import HealthCoach
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +89,11 @@ class AnomalyResponse(BaseModel):
     description: str
     recommendations: List[str]
 
+
+# Initialize new AI engines
+goal_optimizer = GoalOptimizer()
+achievement_engine = AchievementEngine()
+health_coach = HealthCoach()
 
 @router.get("/health-score", response_model=HealthScoreResponse)
 async def get_health_score(
@@ -565,4 +573,447 @@ async def get_health_alerts(
         raise
     except Exception as e:
         logger.error(f"Error detecting health alerts for user {current_user.id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error detecting health alerts") 
+        raise HTTPException(status_code=500, detail="Error detecting health alerts")
+
+
+@router.get("/goals/recommendations")
+async def get_goal_recommendations(
+    max_goals: int = Query(5, ge=1, le=10),
+    difficulty: Optional[str] = Query(None, regex="^(easy|moderate|challenging|ambitious)$"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get AI-powered goal recommendations based on user health patterns.
+    
+    Returns personalized goal suggestions with difficulty levels, timelines,
+    and success probabilities.
+    """
+    try:
+        # Convert difficulty string to enum
+        difficulty_preference = None
+        if difficulty:
+            difficulty_preference = GoalDifficulty(difficulty)
+        
+        recommendations = await goal_optimizer.generate_goal_recommendations(
+            user_id=current_user.id,
+            db=db,
+            max_goals=max_goals,
+            difficulty_preference=difficulty_preference
+        )
+        
+        return {
+            "recommendations": [
+                {
+                    "id": rec.id,
+                    "category": rec.category.value,
+                    "goal_type": rec.goal_type.value,
+                    "title": rec.title,
+                    "description": rec.description,
+                    "target_value": rec.target_value,
+                    "current_value": rec.current_value,
+                    "unit": rec.unit,
+                    "difficulty": rec.difficulty.value,
+                    "timeline_days": rec.timeline_days,
+                    "confidence_score": rec.confidence_score,
+                    "reasoning": rec.reasoning,
+                    "expected_benefits": rec.expected_benefits,
+                    "success_probability": rec.success_probability,
+                    "required_actions": rec.required_actions,
+                    "related_metrics": rec.related_metrics,
+                    "adjustment_triggers": rec.adjustment_triggers
+                }
+                for rec in recommendations
+            ],
+            "total_count": len(recommendations),
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting goal recommendations: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate goal recommendations")
+
+@router.post("/goals/{goal_id}/adjust")
+async def adjust_goal(
+    goal_id: str,
+    progress_data: Dict[str, Any],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get AI-powered goal adjustment recommendations based on current progress.
+    
+    Expected progress_data format:
+    {
+        "current_value": float,
+        "target_value": float,
+        "initial_value": float,
+        "days_elapsed": int,
+        "total_timeline": int
+    }
+    """
+    try:
+        adjustment = await goal_optimizer.adjust_goal(
+            goal_id=goal_id,
+            user_id=current_user.id,
+            db=db,
+            progress_data=progress_data
+        )
+        
+        if not adjustment:
+            return {
+                "adjustment_needed": False,
+                "message": "Goal is on track, no adjustment needed at this time"
+            }
+        
+        return {
+            "adjustment_needed": True,
+            "goal_id": adjustment.goal_id,
+            "adjustment_type": adjustment.adjustment_type,
+            "new_target": adjustment.new_target,
+            "reasoning": adjustment.reasoning,
+            "confidence": adjustment.confidence,
+            "expected_impact": adjustment.expected_impact,
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error adjusting goal: {e}")
+        raise HTTPException(status_code=500, detail="Failed to adjust goal")
+
+@router.post("/goals/coordinate")
+async def coordinate_goals(
+    goal_ids: List[str],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get goal coordination recommendations for multiple goals.
+    """
+    try:
+        coordinations = await goal_optimizer.coordinate_multiple_goals(
+            goal_ids=goal_ids,
+            user_id=current_user.id,
+            db=db
+        )
+        
+        return {
+            "coordinations": [
+                {
+                    "primary_goal_id": coord.primary_goal_id,
+                    "related_goal_ids": coord.related_goal_ids,
+                    "coordination_type": coord.coordination_type,
+                    "impact_description": coord.impact_description,
+                    "optimization_suggestions": coord.optimization_suggestions
+                }
+                for coord in coordinations
+            ],
+            "total_count": len(coordinations),
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error coordinating goals: {e}")
+        raise HTTPException(status_code=500, detail="Failed to coordinate goals")
+
+@router.get("/achievements")
+async def get_achievements(
+    date_range_days: int = Query(7, ge=1, le=90),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get detected achievements based on recent user activity.
+    """
+    try:
+        achievements = await achievement_engine.detect_achievements(
+            user_id=current_user.id,
+            db=db,
+            date_range_days=date_range_days
+        )
+        
+        return {
+            "achievements": [
+                {
+                    "id": ach.id,
+                    "achievement_type": ach.achievement_type.value,
+                    "title": ach.title,
+                    "description": ach.description,
+                    "badge_level": ach.badge_level.value,
+                    "celebration_level": ach.celebration_level.value,
+                    "earned_date": ach.earned_date.isoformat(),
+                    "metric_type": ach.metric_type,
+                    "achievement_value": ach.achievement_value,
+                    "previous_best": ach.previous_best,
+                    "improvement_percentage": ach.improvement_percentage,
+                    "streak_days": ach.streak_days,
+                    "requirements_met": ach.requirements_met,
+                    "next_milestone": ach.next_milestone,
+                    "sharing_message": ach.sharing_message,
+                    "motivation_message": ach.motivation_message
+                }
+                for ach in achievements
+            ],
+            "total_count": len(achievements),
+            "date_range_days": date_range_days,
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting achievements: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get achievements")
+
+@router.get("/achievements/streaks")
+async def get_user_streaks(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get current user streaks across different health metrics.
+    """
+    try:
+        streaks = await achievement_engine.get_user_streaks(
+            user_id=current_user.id,
+            db=db
+        )
+        
+        return {
+            "streaks": [
+                {
+                    "id": streak.id,
+                    "metric_type": streak.metric_type,
+                    "current_count": streak.current_count,
+                    "best_count": streak.best_count,
+                    "start_date": streak.start_date.isoformat(),
+                    "last_update": streak.last_update.isoformat(),
+                    "target_value": streak.target_value,
+                    "streak_type": streak.streak_type,
+                    "is_active": streak.is_active,
+                    "milestone_reached": streak.milestone_reached
+                }
+                for streak in streaks
+            ],
+            "total_count": len(streaks),
+            "active_streaks": len([s for s in streaks if s.is_active]),
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting user streaks: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get user streaks")
+
+@router.post("/achievements/{achievement_id}/celebrate")
+async def create_celebration(
+    achievement_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a celebration event for an achievement.
+    """
+    try:
+        # First, get the achievement (this would typically come from a database)
+        # For now, we'll create a mock achievement for the celebration
+        from backend.ai.achievement_engine import Achievement, AchievementType, BadgeLevel, CelebrationLevel
+        
+        mock_achievement = Achievement(
+            id=achievement_id,
+            achievement_type=AchievementType.MILESTONE,
+            title="Sample Achievement",
+            description="Sample achievement description",
+            badge_level=BadgeLevel.GOLD,
+            celebration_level=CelebrationLevel.MAJOR,
+            earned_date=datetime.now(),
+            metric_type="steps",
+            achievement_value=10000,
+            previous_best=None,
+            improvement_percentage=None,
+            streak_days=None,
+            requirements_met=["Reached milestone"],
+            next_milestone="Next: 12,000 steps",
+            sharing_message="Achieved 10,000 steps!",
+            motivation_message="Keep up the great work!"
+        )
+        
+        celebration = await achievement_engine.create_celebration_event(mock_achievement)
+        
+        if not celebration:
+            raise HTTPException(status_code=404, detail="Achievement not found or celebration failed")
+        
+        return {
+            "celebration": {
+                "id": celebration.id,
+                "achievement_id": celebration.achievement_id,
+                "celebration_type": celebration.celebration_type,
+                "celebration_level": celebration.celebration_level.value,
+                "trigger_date": celebration.trigger_date.isoformat(),
+                "message": celebration.message,
+                "visual_elements": celebration.visual_elements,
+                "sound_effects": celebration.sound_effects,
+                "sharing_options": celebration.sharing_options,
+                "follow_up_actions": celebration.follow_up_actions
+            },
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating celebration: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create celebration")
+
+@router.get("/coaching/messages")
+async def get_coaching_messages(
+    message_count: int = Query(3, ge=1, le=10),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get personalized coaching messages based on user health patterns and progress.
+    """
+    try:
+        messages = await health_coach.generate_coaching_messages(
+            user_id=current_user.id,
+            db=db,
+            message_count=message_count
+        )
+        
+        return {
+            "messages": [
+                {
+                    "id": msg.id,
+                    "coaching_type": msg.coaching_type.value,
+                    "title": msg.title,
+                    "message": msg.message,
+                    "timing": msg.timing.value,
+                    "priority": msg.priority,
+                    "target_metrics": msg.target_metrics,
+                    "actionable_steps": msg.actionable_steps,
+                    "expected_outcome": msg.expected_outcome,
+                    "follow_up_days": msg.follow_up_days,
+                    "personalization_factors": msg.personalization_factors
+                }
+                for msg in messages
+            ],
+            "total_count": len(messages),
+            "message_count": message_count,
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting coaching messages: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get coaching messages")
+
+@router.post("/coaching/interventions")
+async def create_behavioral_intervention(
+    target_behavior: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a personalized behavioral intervention plan for a specific behavior.
+    """
+    try:
+        intervention = await health_coach.create_behavioral_intervention(
+            user_id=current_user.id,
+            db=db,
+            target_behavior=target_behavior
+        )
+        
+        if not intervention:
+            raise HTTPException(status_code=400, detail="Unable to create intervention for specified behavior")
+        
+        return {
+            "intervention": {
+                "id": intervention.id,
+                "intervention_type": intervention.intervention_type,
+                "target_behavior": intervention.target_behavior,
+                "current_pattern": intervention.current_pattern,
+                "desired_pattern": intervention.desired_pattern,
+                "intervention_strategy": intervention.intervention_strategy,
+                "implementation_steps": intervention.implementation_steps,
+                "success_metrics": intervention.success_metrics,
+                "timeline_days": intervention.timeline_days,
+                "difficulty_level": intervention.difficulty_level
+            },
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating behavioral intervention: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create behavioral intervention")
+
+@router.get("/coaching/progress")
+async def get_coaching_progress(
+    days: int = Query(30, ge=7, le=90),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get coaching progress summary including recent improvements and areas for focus.
+    """
+    try:
+        # Get user health data for analysis
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+        
+        health_data = db.query(HealthData).filter(
+            HealthData.user_id == current_user.id,
+            HealthData.recorded_at >= start_date,
+            HealthData.recorded_at <= end_date
+        ).all()
+        
+        if not health_data:
+            return {
+                "progress_summary": "Insufficient data for progress analysis",
+                "recommendations": ["Start tracking health metrics consistently"],
+                "focus_areas": [],
+                "achievements_count": 0,
+                "days_analyzed": days
+            }
+        
+        # Convert to DataFrame for analysis
+        import pandas as pd
+        data_list = []
+        for record in health_data:
+            data_list.append({
+                'date': record.recorded_at.date(),
+                'metric_type': record.metric_type,
+                'value': record.value,
+                'unit': record.unit,
+                'source': record.source
+            })
+        
+        user_data = pd.DataFrame(data_list)
+        
+        # Analyze progress patterns
+        progress_analysis = health_coach._analyze_recent_progress(user_data)
+        
+        # Get recent achievements
+        achievements = await achievement_engine.detect_achievements(
+            user_id=current_user.id,
+            db=db,
+            date_range_days=days
+        )
+        
+        # Generate focus areas
+        focus_areas = []
+        if progress_analysis.get("has_struggles"):
+            for metric, decline in progress_analysis["struggles"].items():
+                focus_areas.append({
+                    "metric": metric,
+                    "issue": f"Declined by {decline}%",
+                    "recommendation": f"Focus on improving {metric} consistency"
+                })
+        
+        return {
+            "progress_summary": f"Analyzed {days} days of health data",
+            "improvements": progress_analysis.get("improvements", {}),
+            "struggles": progress_analysis.get("struggles", {}),
+            "focus_areas": focus_areas,
+            "achievements_count": len(achievements),
+            "days_analyzed": days,
+            "generated_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting coaching progress: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get coaching progress") 
