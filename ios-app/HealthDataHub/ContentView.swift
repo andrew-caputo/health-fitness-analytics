@@ -53,13 +53,21 @@ struct ContentView: View {
                 }
                 .tag(3)
             
+            // Privacy Tab
+            PrivacyDashboardView()
+                .tabItem {
+                    Image(systemName: "shield.checkered")
+                    Text("Privacy")
+                }
+                .tag(4)
+            
             // Settings Tab
             SettingsView()
                 .tabItem {
                     Image(systemName: "gear")
                     Text("Settings")
                 }
-                .tag(4)
+                .tag(5)
         }
         .onAppear {
             setupInitialData()
