@@ -61,13 +61,29 @@ struct ContentView: View {
                 }
                 .tag(4)
             
+            // Sync Tab
+            SyncDashboardView()
+                .tabItem {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                    Text("Sync")
+                }
+                .tag(5)
+            
+            // Notifications Tab
+            NotificationCenterView()
+                .tabItem {
+                    Image(systemName: "bell")
+                    Text("Alerts")
+                }
+                .tag(6)
+            
             // Settings Tab
             SettingsView()
                 .tabItem {
                     Image(systemName: "gear")
                     Text("Settings")
                 }
-                .tag(5)
+                .tag(7)
         }
         .onAppear {
             setupInitialData()
