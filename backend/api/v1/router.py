@@ -10,7 +10,7 @@ from backend.api.v1.endpoints import (
     preferences,
     apple_health,
     csv_import,
-    ai_insights,
+    ai_insights,  # Re-enabled for gradual testing with lazy imports
 )
 from backend.api.v1.endpoints.data_sources import common, withings, oura, fitbit, whoop, strava, fatsecret
 from backend.api.v1.endpoints.mobile import auth as mobile_auth, healthkit, user as mobile_user
@@ -52,7 +52,7 @@ api_router.include_router(
     tags=["insights"]
 )
 
-# AI Insights endpoints (Phase 4D)
+# AI Insights endpoints - FULLY RESTORED with lazy imports (no numpy contamination)
 api_router.include_router(
     ai_insights.router,
     prefix="/ai",

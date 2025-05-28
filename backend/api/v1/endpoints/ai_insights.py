@@ -14,23 +14,25 @@ import logging
 from backend.core.database import get_db
 from backend.api.deps import get_current_user
 from backend.core.models import User, HealthMetricUnified
-from backend.ai.health_insights_engine import health_insights_engine, HealthInsight, HealthScore
+# Remove problematic module-level AI imports that contaminate FastAPI with numpy
+# from backend.ai.health_insights_engine import health_insights_engine, HealthInsight, HealthScore
 from pydantic import BaseModel
-from backend.ai.goal_optimizer import GoalOptimizer, GoalDifficulty
-from backend.ai.achievement_engine import AchievementEngine, Achievement, AchievementType, BadgeLevel, CelebrationLevel
-from backend.ai.health_coach import HealthCoach
-from backend.ai.recommendation_engine import RecommendationEngine
-from backend.ai.anomaly_detector import AnomalyDetector
-from backend.ai.pattern_recognition import PatternRecognizer
+# from backend.ai.goal_optimizer import GoalOptimizer, GoalDifficulty
+# from backend.ai.achievement_engine import AchievementEngine, Achievement, AchievementType, BadgeLevel, CelebrationLevel
+# from backend.ai.health_coach import HealthCoach
+# from backend.ai.recommendation_engine import RecommendationEngine
+# from backend.ai.anomaly_detector import AnomalyDetector
+# from backend.ai.pattern_recognition import PatternRecognizer
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Remove global AI engine initialization to prevent numpy contamination
 # Initialize AI engines
-goal_optimizer = GoalOptimizer()
-achievement_engine = AchievementEngine()
-health_coach = HealthCoach()
+# goal_optimizer = GoalOptimizer()
+# achievement_engine = AchievementEngine()
+# health_coach = HealthCoach()
 
 @router.get("/test")
 async def test_ai_endpoint():
@@ -46,6 +48,38 @@ async def test_ai_endpoint():
             "/ai/coaching/messages"
         ]
     }
+
+@router.get("/test-lazy-import")
+async def test_lazy_import():
+    """Test endpoint to verify lazy imports work without numpy contamination"""
+    try:
+        # Test lazy import of one AI module
+        from backend.ai.health_insights_engine import health_insights_engine
+        
+        # Test if the import was successful
+        engine_info = {
+            "engine_loaded": True,
+            "engine_type": str(type(health_insights_engine)),
+            "has_calculate_method": hasattr(health_insights_engine, 'calculate_health_score'),
+            "has_insights_method": hasattr(health_insights_engine, 'generate_comprehensive_insights')
+        }
+        
+        return {
+            "status": "success",
+            "message": "Lazy import test successful - no numpy contamination detected",
+            "timestamp": datetime.utcnow().isoformat(),
+            "engine_info": engine_info,
+            "test_passed": True
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error", 
+            "message": f"Lazy import test failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat(),
+            "test_passed": False,
+            "error_type": type(e).__name__
+        }
 
 # Pydantic models for API responses
 class HealthInsightResponse(BaseModel):
@@ -130,6 +164,9 @@ async def get_health_score(
         HealthScoreResponse with component scores
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_insights_engine import health_insights_engine
+        
         health_score = health_insights_engine.calculate_health_score(
             user_id=current_user.id,
             days_back=days_back,
@@ -153,6 +190,8 @@ async def get_health_score(
             last_updated=health_score.last_updated
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error calculating health score for user {current_user.id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Error calculating health score")
@@ -182,6 +221,9 @@ async def get_health_insights(
         List of health insights
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_insights_engine import health_insights_engine
+        
         insights = health_insights_engine.generate_comprehensive_insights(
             user_id=current_user.id,
             days_back=days_back,
@@ -241,6 +283,9 @@ async def get_insights_summary(
         Summary of insights with counts and latest insights
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_insights_engine import health_insights_engine
+        
         insights = health_insights_engine.generate_comprehensive_insights(
             user_id=current_user.id,
             days_back=days_back,
@@ -258,7 +303,11 @@ async def get_insights_summary(
         # Count by category
         category_counts = {}
         for insight in insights:
-            insight_type = insight.insight_type.value
+            priority = insight.priority.value if hasattr(insight.priority, 'value') else str(insight.priority)
+            if priority in priority_counts:
+                priority_counts[priority] += 1
+                
+            insight_type = insight.insight_type.value if hasattr(insight.insight_type, 'value') else str(insight.insight_type)
             category_counts[insight_type] = category_counts.get(insight_type, 0) + 1
         
         # Get latest insights (top 5)
@@ -266,8 +315,8 @@ async def get_insights_summary(
         for insight in insights[:5]:
             latest_insights.append(HealthInsightResponse(
                 id=insight.id,
-                insight_type=insight.insight_type.value,
-                priority=insight.priority.value,
+                insight_type=insight.insight_type.value if hasattr(insight.insight_type, 'value') else str(insight.insight_type),
+                priority=insight.priority.value if hasattr(insight.priority, 'value') else str(insight.priority),
                 title=insight.title,
                 description=insight.description,
                 data_sources=insight.data_sources,
@@ -315,6 +364,10 @@ async def get_recommendations(
         List of personalized recommendations
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_insights_engine import health_insights_engine
+        from backend.ai.recommendation_engine import RecommendationEngine
+        
         health_data = health_insights_engine._get_user_health_data(
             user_id=current_user.id,
             days_back=days_back,
@@ -386,6 +439,10 @@ async def get_anomalies(
         List of detected anomalies
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_insights_engine import health_insights_engine
+        from backend.ai.anomaly_detector import AnomalyDetector
+        
         health_data = health_insights_engine._get_user_health_data(
             user_id=current_user.id,
             days_back=days_back,
@@ -455,6 +512,10 @@ async def get_patterns(
         List of identified patterns
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_insights_engine import health_insights_engine
+        from backend.ai.pattern_recognition import PatternRecognizer
+        
         health_data = health_insights_engine._get_user_health_data(
             user_id=current_user.id,
             days_back=days_back,
@@ -504,6 +565,10 @@ async def get_trends(
         List of trend analyses
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_insights_engine import health_insights_engine
+        from backend.ai.pattern_recognition import PatternRecognizer
+        
         health_data = health_insights_engine._get_user_health_data(
             user_id=current_user.id,
             days_back=days_back,
@@ -553,6 +618,10 @@ async def get_health_alerts(
         List of health alerts
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_insights_engine import health_insights_engine
+        from backend.ai.anomaly_detector import AnomalyDetector
+        
         health_data = health_insights_engine._get_user_health_data(
             user_id=current_user.id,
             days_back=days_back,
@@ -596,11 +665,15 @@ async def get_goal_recommendations(
     and success probabilities.
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.goal_optimizer import GoalOptimizer, GoalDifficulty
+        
         # Convert difficulty string to enum
         difficulty_preference = None
         if difficulty:
             difficulty_preference = GoalDifficulty(difficulty)
         
+        goal_optimizer = GoalOptimizer()
         recommendations = await goal_optimizer.generate_goal_recommendations(
             user_id=current_user.id,
             db=db,
@@ -638,6 +711,10 @@ async def adjust_goal(
     }
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.goal_optimizer import GoalOptimizer
+        
+        goal_optimizer = GoalOptimizer()
         adjustment = await goal_optimizer.adjust_goal(
             goal_id=goal_id,
             user_id=current_user.id,
@@ -676,6 +753,10 @@ async def coordinate_goals(
     Get goal coordination recommendations for multiple goals.
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.goal_optimizer import GoalOptimizer
+        
+        goal_optimizer = GoalOptimizer()
         coordinations = await goal_optimizer.coordinate_multiple_goals(
             goal_ids=goal_ids,
             user_id=current_user.id,
@@ -702,6 +783,10 @@ async def get_achievements(
     Get detected achievements based on recent user activity.
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.achievement_engine import AchievementEngine
+        
+        achievement_engine = AchievementEngine()
         achievements = await achievement_engine.detect_achievements(
             user_id=current_user.id,
             db=db,
@@ -728,6 +813,10 @@ async def get_user_streaks(
     Get current user streaks across different health metrics.
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.achievement_engine import AchievementEngine
+        
+        achievement_engine = AchievementEngine()
         streaks = await achievement_engine.get_user_streaks(
             user_id=current_user.id,
             db=db
@@ -754,6 +843,9 @@ async def create_celebration(
     Create a celebration event for an achievement.
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.achievement_engine import AchievementEngine, Achievement, AchievementType, BadgeLevel, CelebrationLevel
+        
         # First, get the achievement (this would typically come from a database)
         # For now, we'll create a mock achievement for the celebration
         mock_achievement = Achievement(
@@ -775,6 +867,7 @@ async def create_celebration(
             motivation_message="Keep up the great work!"
         )
         
+        achievement_engine = AchievementEngine()
         celebration = await achievement_engine.create_celebration_event(mock_achievement)
         
         if not celebration:
@@ -810,6 +903,10 @@ async def get_coaching_messages(
     Get personalized coaching messages based on user health patterns and progress.
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_coach import HealthCoach
+        
+        health_coach = HealthCoach()
         messages = await health_coach.generate_coaching_messages(
             user_id=current_user.id,
             db=db,
@@ -837,6 +934,10 @@ async def create_behavioral_intervention(
     Create a personalized behavioral intervention plan for a specific behavior.
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_coach import HealthCoach
+        
+        health_coach = HealthCoach()
         intervention = await health_coach.create_behavioral_intervention(
             user_id=current_user.id,
             db=db,
@@ -876,6 +977,10 @@ async def get_coaching_progress(
     Get coaching progress summary including recent improvements and areas for focus.
     """
     try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_coach import HealthCoach
+        from backend.ai.achievement_engine import AchievementEngine
+        
         # Get user health data for analysis
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
@@ -910,9 +1015,11 @@ async def get_coaching_progress(
         user_data = pd.DataFrame(data_list)
         
         # Analyze progress patterns
+        health_coach = HealthCoach()
         progress_analysis = health_coach._analyze_recent_progress(user_data)
         
         # Get recent achievements
+        achievement_engine = AchievementEngine()
         achievements = await achievement_engine.detect_achievements(
             user_id=current_user.id,
             db=db,
@@ -941,4 +1048,46 @@ async def get_coaching_progress(
         
     except Exception as e:
         logger.error(f"Error getting coaching progress: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get coaching progress") 
+        raise HTTPException(status_code=500, detail="Failed to get coaching progress")
+
+@router.get("/health-score-lazy", response_model=HealthScoreResponse)
+async def get_health_score_lazy(
+    days_back: int = Query(30, ge=7, le=365, description="Number of days to analyze"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get comprehensive health score using lazy imports to avoid numpy contamination
+    """
+    try:
+        # Lazy import to avoid global numpy contamination
+        from backend.ai.health_insights_engine import health_insights_engine
+        
+        health_score = health_insights_engine.calculate_health_score(
+            user_id=current_user.id,
+            days_back=days_back,
+            db=db
+        )
+        
+        if not health_score:
+            raise HTTPException(
+                status_code=404,
+                detail="Insufficient health data to calculate score"
+            )
+        
+        return HealthScoreResponse(
+            overall_score=health_score.overall_score,
+            activity_score=health_score.activity_score,
+            sleep_score=health_score.sleep_score,
+            nutrition_score=health_score.nutrition_score,
+            heart_health_score=health_score.heart_health_score,
+            consistency_score=health_score.consistency_score,
+            trend_score=health_score.trend_score,
+            last_updated=health_score.last_updated
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating health score for user {current_user.id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error calculating health score") 

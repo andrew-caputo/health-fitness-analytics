@@ -4,6 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
 from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -42,20 +43,38 @@ def register_user(user_in: UserCreate, db: Session = Depends(get_db)) -> Any:
     db.refresh(user)
     return user
 
-@router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> Any:
+@router.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> JSONResponse:
     """
-    OAuth2 compatible token login, get an access token for future requests.
+    OAuth2 compatible token login - returns raw JSON to avoid numpy serialization issues
     """
-    user = db.query(User).filter(User.email == form_data.username).first()
-    if not user or not pwd_context.verify(form_data.password, getattr(user, "hashed_password", None)):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        user = db.query(User).filter(User.email == form_data.username).first()
+        if not user or not pwd_context.verify(form_data.password, getattr(user, "hashed_password", None)):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Create token and return as raw JSON to bypass Pydantic serialization
+        access_token = create_access_token(str(user.id))
+        
+        # Return JSONResponse directly to avoid any Pydantic/numpy serialization issues
+        return JSONResponse(
+            status_code=200,
+            content={
+                "access_token": access_token,
+                "token_type": "bearer"
+            }
         )
-    
-    return {
-        "access_token": create_access_token(user.id),
-        "token_type": "bearer",
-    } 
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log the actual error for debugging
+        print(f"Auth error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication failed"
+        ) 

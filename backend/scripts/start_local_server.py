@@ -12,9 +12,14 @@ import subprocess
 import time
 import requests
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Add the backend directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Load environment configuration
+load_dotenv('config/local.env')
+load_dotenv('.env')
 
 def check_dependencies():
     """Check if all required dependencies are installed"""
@@ -96,10 +101,10 @@ def start_server():
     """Start the FastAPI server with development configuration"""
     print("🚀 Starting FastAPI server...")
     
-    # Server configuration
-    host = "0.0.0.0"
-    port = 8000
-    reload = True
+    # Server configuration from environment
+    host = os.getenv('API_HOST', '0.0.0.0')
+    port = int(os.getenv('API_PORT', '8001'))
+    reload = os.getenv('API_RELOAD', 'true').lower() == 'true'
     
     try:
         # Start server using uvicorn
@@ -114,9 +119,9 @@ def start_server():
         ]
         
         print(f"🌐 Server starting at http://{host}:{port}")
-        print("📚 API Documentation: http://localhost:8000/docs")
-        print("🔧 Alternative docs: http://localhost:8000/redoc")
-        print("❤️ Health check: http://localhost:8000/health")
+        print(f"📚 API Documentation: http://localhost:{port}/docs")
+        print(f"🔧 Alternative docs: http://localhost:{port}/redoc")
+        print(f"❤️ Health check: http://localhost:{port}/health")
         print("\n🛑 Press Ctrl+C to stop the server\n")
         
         # Start the server
@@ -127,8 +132,11 @@ def start_server():
     except Exception as e:
         print(f"❌ Error starting server: {e}")
 
-def wait_for_server(host="localhost", port=8000, timeout=30):
+def wait_for_server(host="localhost", port=None, timeout=30):
     """Wait for server to be ready"""
+    if port is None:
+        port = int(os.getenv('API_PORT', '8001'))
+        
     print(f"⏳ Waiting for server at {host}:{port}...")
     
     start_time = time.time()
@@ -150,6 +158,9 @@ def run_health_check():
     """Run comprehensive health check"""
     print("🏥 Running health check...")
     
+    port = int(os.getenv('API_PORT', '8001'))
+    base_url = f"http://localhost:{port}"
+    
     endpoints_to_test = [
         "/health",
         "/api/v1/auth/test",
@@ -157,8 +168,6 @@ def run_health_check():
         "/api/v1/ai/insights",
         "/api/v1/data-sources/capabilities"
     ]
-    
-    base_url = "http://localhost:8000"
     
     for endpoint in endpoints_to_test:
         try:
@@ -170,6 +179,8 @@ def run_health_check():
 
 def print_startup_info():
     """Print startup information and instructions"""
+    port = int(os.getenv('API_PORT', '8001'))
+    
     print("\n" + "="*60)
     print("🎯 PHASE 5 WEEK 1: LOCAL TESTING & VALIDATION")
     print("="*60)
@@ -182,10 +193,10 @@ def print_startup_info():
     print("   Password: testpassword123")
     
     print("\n🔗 IMPORTANT URLS:")
-    print("   🌐 API Server: http://localhost:8000")
-    print("   📚 API Docs: http://localhost:8000/docs")
-    print("   🔧 ReDoc: http://localhost:8000/redoc")
-    print("   ❤️ Health: http://localhost:8000/health")
+    print(f"   🌐 API Server: http://localhost:{port}")
+    print(f"   📚 API Docs: http://localhost:{port}/docs")
+    print(f"   🔧 ReDoc: http://localhost:{port}/redoc")
+    print(f"   ❤️ Health: http://localhost:{port}/health")
     
     print("\n🧪 TESTING CHECKLIST:")
     print("   □ User authentication and registration")

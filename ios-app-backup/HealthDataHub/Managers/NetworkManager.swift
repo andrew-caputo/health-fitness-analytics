@@ -9,7 +9,7 @@ class NetworkManager: ObservableObject {
     @Published var currentUser: User?
     @Published var networkError: String?
     
-    private let baseURL = "http://localhost:8000/api/v1"  // Update for production
+    private let baseURL = "http://localhost:8001/api/v1"  // Updated for local backend on port 8001
     private var accessToken: String?
     private var cancellables = Set<AnyCancellable>()
     

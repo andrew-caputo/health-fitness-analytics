@@ -3,15 +3,50 @@ from typing import Optional
 from uuid import uuid4
 
 from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Index, String, Text, Boolean, Integer, Numeric
+from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import declarative_base, relationship
+import uuid
+
+# SQLite-compatible UUID type
+class GUID(TypeDecorator):
+    """Platform-independent GUID type.
+    Uses PostgreSQL's UUID type, otherwise uses CHAR(32), storing as stringified hex values.
+    """
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(PGUUID())
+        else:
+            return dialect.type_descriptor(CHAR(36))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        elif dialect.name == 'postgresql':
+            return str(value)
+        else:
+            if not isinstance(value, uuid.UUID):
+                return str(uuid.UUID(value))
+            else:
+                return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            if not isinstance(value, uuid.UUID):
+                return uuid.UUID(value)
+            return value
 
 Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(PGUUID, primary_key=True, default=uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid4)
     email = Column(String(255), unique=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -27,8 +62,8 @@ class User(Base):
 class HealthMetric(Base):
     __tablename__ = "health_metrics"
 
-    id = Column(PGUUID, primary_key=True, default=uuid4)
-    user_id = Column(PGUUID, ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     metric_type = Column(String(50), nullable=False)
     value = Column(Float, nullable=False)
     source = Column(String(50), nullable=False)
@@ -43,8 +78,8 @@ class HealthMetric(Base):
 class UserGoal(Base):
     __tablename__ = "user_goals"
 
-    id = Column(PGUUID, primary_key=True, default=uuid4)
-    user_id = Column(PGUUID, ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     goal_type = Column(String(50), nullable=False)
     target_value = Column(Float, nullable=False)
     start_date = Column(DateTime, nullable=False)
@@ -57,8 +92,8 @@ class UserGoal(Base):
 class DataSourceConnection(Base):
     __tablename__ = "data_source_connections"
 
-    id = Column(PGUUID, primary_key=True, default=uuid4)
-    user_id = Column(PGUUID, ForeignKey("users.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     source_type = Column(String(50), nullable=False)  # "apple_health", "withings", "csv"
     access_token = Column(Text, nullable=True)
     refresh_token = Column(Text, nullable=True)
@@ -78,8 +113,8 @@ class DataSourceConnection(Base):
 class DataSyncLog(Base):
     __tablename__ = "data_sync_logs"
 
-    id = Column(PGUUID, primary_key=True, default=uuid4)
-    connection_id = Column(PGUUID, ForeignKey("data_source_connections.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    connection_id = Column(GUID(), ForeignKey("data_source_connections.id"), nullable=False)
     start_time = Column(DateTime, nullable=False, default=datetime.utcnow)
     end_time = Column(DateTime, nullable=True)
     status = Column(String(20), nullable=False)  # "success", "error", "in_progress"
@@ -90,8 +125,8 @@ class DataSyncLog(Base):
 class WithingsMeasurement(Base):
     __tablename__ = "withings_measurements"
 
-    id = Column(PGUUID, primary_key=True, default=uuid4)
-    connection_id = Column(PGUUID, ForeignKey("data_source_connections.id"), nullable=False, index=True)
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    connection_id = Column(GUID(), ForeignKey("data_source_connections.id"), nullable=False, index=True)
     timestamp = Column(DateTime, index=True, nullable=False)
     type = Column(String(50), index=True, nullable=False)  # e.g., "weight", "fat_mass", etc.
     value = Column(Float, nullable=False)
@@ -108,8 +143,8 @@ class WithingsMeasurement(Base):
 class UserDataSourcePreferences(Base):
     __tablename__ = "user_data_source_preferences"
 
-    id = Column(PGUUID, primary_key=True, default=uuid4)
-    user_id = Column(PGUUID, ForeignKey("users.id"), nullable=False, index=True, unique=True)
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False, index=True, unique=True)
     activity_source = Column(String(50), nullable=True)  # User's preferred activity data source
     sleep_source = Column(String(50), nullable=True)  # User's preferred sleep data source
     nutrition_source = Column(String(50), nullable=True)  # User's preferred nutrition data source
@@ -124,8 +159,8 @@ class UserDataSourcePreferences(Base):
 class HealthMetricUnified(Base):
     __tablename__ = "health_metrics_unified"
 
-    id = Column(PGUUID, primary_key=True, default=uuid4)
-    user_id = Column(PGUUID, ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False, index=True)
     metric_type = Column(String(50), nullable=False, index=True)  # e.g., "steps", "weight", "sleep_duration"
     category = Column(String(30), nullable=False, index=True)  # activity, sleep, nutrition, body_composition
     value = Column(Numeric(precision=10, scale=3), nullable=False)
@@ -146,8 +181,8 @@ class HealthMetricUnified(Base):
 class FileProcessingJob(Base):
     __tablename__ = "file_processing_jobs"
 
-    id = Column(PGUUID, primary_key=True, default=uuid4)
-    user_id = Column(PGUUID, ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False, index=True)
     file_type = Column(String(20), nullable=False)  # apple_health, csv
     filename = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)
@@ -166,7 +201,7 @@ class FileProcessingJob(Base):
 class DataSourceCapabilities(Base):
     __tablename__ = "data_source_capabilities"
 
-    id = Column(PGUUID, primary_key=True, default=uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid4)
     source_name = Column(String(50), nullable=False, index=True, unique=True)
     display_name = Column(String(100), nullable=False)
     supports_activity = Column(Boolean, nullable=False, default=False)
