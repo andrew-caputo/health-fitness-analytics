@@ -16,7 +16,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 
 from ..core.database import get_db
-from ..core.models import User, HealthData, UserPreferences
+from ..core.models import User, HealthMetricUnified, UserDataSourcePreferences
 from .health_insights_engine import HealthInsightsEngine
 from .pattern_recognition import PatternRecognizer
 from .correlation_analyzer import CorrelationAnalyzer
@@ -645,10 +645,10 @@ class GoalOptimizer:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=90)
             
-            health_data = db.query(HealthData).filter(
-                HealthData.user_id == user_id,
-                HealthData.recorded_at >= start_date,
-                HealthData.recorded_at <= end_date
+            health_data = db.query(HealthMetricUnified).filter(
+                HealthMetricUnified.user_id == user_id,
+                HealthMetricUnified.timestamp >= start_date,
+                HealthMetricUnified.timestamp <= end_date
             ).all()
             
             if not health_data:
@@ -658,14 +658,20 @@ class GoalOptimizer:
             data_list = []
             for record in health_data:
                 data_list.append({
-                    'date': record.recorded_at.date(),
+                    'date': record.timestamp.date(),
                     'metric_type': record.metric_type,
-                    'value': record.value,
+                    'value': float(record.value),  # Convert Decimal to float for proper pandas/numpy processing
                     'unit': record.unit,
-                    'source': record.source
+                    'source': record.data_source
                 })
             
-            return pd.DataFrame(data_list)
+            df = pd.DataFrame(data_list)
+            
+            # Ensure numeric columns are properly typed
+            if not df.empty:
+                df['value'] = pd.to_numeric(df['value'], errors='coerce')
+            
+            return df
             
         except Exception as e:
             logger.error(f"Error retrieving user health data: {e}")

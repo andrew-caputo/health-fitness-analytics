@@ -13,7 +13,7 @@ from enum import Enum
 import pandas as pd
 from sqlalchemy.orm import Session
 
-from ..core.models import HealthData
+from ..core.models import HealthMetricUnified
 from .pattern_recognition import PatternRecognizer
 from .health_insights_engine import HealthInsightsEngine
 
@@ -532,10 +532,10 @@ class HealthCoach:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
             
-            health_data = db.query(HealthData).filter(
-                HealthData.user_id == user_id,
-                HealthData.recorded_at >= start_date,
-                HealthData.recorded_at <= end_date
+            health_data = db.query(HealthMetricUnified).filter(
+                HealthMetricUnified.user_id == user_id,
+                HealthMetricUnified.timestamp >= start_date,
+                HealthMetricUnified.timestamp <= end_date
             ).all()
             
             if not health_data:
@@ -544,11 +544,11 @@ class HealthCoach:
             data_list = []
             for record in health_data:
                 data_list.append({
-                    'date': record.recorded_at.date(),
+                    'date': record.timestamp.date(),
                     'metric_type': record.metric_type,
                     'value': record.value,
                     'unit': record.unit,
-                    'source': record.source
+                    'source': record.data_source
                 })
             
             return pd.DataFrame(data_list)

@@ -1,6 +1,7 @@
 import os
 from typing import Optional, Dict, Any, List
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -53,13 +54,20 @@ class Settings(BaseSettings):
     CRONOMETER_REDIRECT_URI: str = os.getenv("CRONOMETER_REDIRECT_URI", "http://localhost:3000/auth/cronometer/callback")
     
     # CORS and Security
-    ALLOWED_HOSTS: List[str] = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0").split(",")
+    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1", "0.0.0.0"]
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
     
     # Rate Limiting
     RATE_LIMIT_CALLS: int = int(os.getenv("RATE_LIMIT_CALLS", "100"))
     RATE_LIMIT_PERIOD: int = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
+    
+    @field_validator('ALLOWED_HOSTS', mode='before')
+    @classmethod
+    def parse_allowed_hosts(cls, v):
+        if isinstance(v, str):
+            return [host.strip() for host in v.split(',')]
+        return v
     
     class Config:
         env_file = ".env"

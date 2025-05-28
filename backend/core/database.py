@@ -4,11 +4,16 @@ from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-# Main database URL
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/health_fitness")
+from backend.core.config import Settings
+
+# Load settings which will read from .env file
+settings = Settings()
+
+# Main database URL from settings
+DATABASE_URL = settings.DATABASE_URL
 
 # Test database URL (can be overridden by environment variable for CI/CD)
-TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/health_fitness_test")
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///./test_health_fitness_analytics.db")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -9,11 +9,13 @@ from sqlalchemy.orm import Session
 from backend.core.database import get_db
 from backend.core.models import User
 from backend.core.schemas import TokenPayload
+from backend.core.config import Settings
 
-# TODO: Move to environment variables
-SECRET_KEY = "your-secret-key-here"  # Change this in production
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# Use settings from config
+settings = Settings()
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 

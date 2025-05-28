@@ -11,19 +11,41 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 import logging
 
-from core.database import get_db
+from backend.core.database import get_db
 from backend.api.deps import get_current_user
-from core.models import User, HealthData
-from ai.health_insights_engine import health_insights_engine, HealthInsight, HealthScore
+from backend.core.models import User, HealthMetricUnified
+from backend.ai.health_insights_engine import health_insights_engine, HealthInsight, HealthScore
 from pydantic import BaseModel
 from backend.ai.goal_optimizer import GoalOptimizer, GoalDifficulty
-from backend.ai.achievement_engine import AchievementEngine
+from backend.ai.achievement_engine import AchievementEngine, Achievement, AchievementType, BadgeLevel, CelebrationLevel
 from backend.ai.health_coach import HealthCoach
+from backend.ai.recommendation_engine import RecommendationEngine
+from backend.ai.anomaly_detector import AnomalyDetector
+from backend.ai.pattern_recognition import PatternRecognizer
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Initialize AI engines
+goal_optimizer = GoalOptimizer()
+achievement_engine = AchievementEngine()
+health_coach = HealthCoach()
+
+@router.get("/test")
+async def test_ai_endpoint():
+    """Simple test endpoint to verify AI router is working"""
+    return {
+        "message": "AI endpoints are working!",
+        "timestamp": datetime.utcnow().isoformat(),
+        "endpoints_available": [
+            "/ai/health-score",
+            "/ai/insights", 
+            "/ai/goals/recommendations",
+            "/ai/achievements",
+            "/ai/coaching/messages"
+        ]
+    }
 
 # Pydantic models for API responses
 class HealthInsightResponse(BaseModel):
@@ -89,11 +111,6 @@ class AnomalyResponse(BaseModel):
     description: str
     recommendations: List[str]
 
-
-# Initialize new AI engines
-goal_optimizer = GoalOptimizer()
-achievement_engine = AchievementEngine()
-health_coach = HealthCoach()
 
 @router.get("/health-score", response_model=HealthScoreResponse)
 async def get_health_score(
@@ -232,10 +249,10 @@ async def get_insights_summary(
         
         # Count by priority
         priority_counts = {
-            'high': len([i for i in insights if i.priority.value == 'high']),
-            'medium': len([i for i in insights if i.priority.value == 'medium']),
-            'low': len([i for i in insights if i.priority.value == 'low']),
-            'critical': len([i for i in insights if i.priority.value == 'critical'])
+            'high': 0,
+            'medium': 0,
+            'low': 0,
+            'critical': 0
         }
         
         # Count by category
@@ -298,8 +315,6 @@ async def get_recommendations(
         List of personalized recommendations
     """
     try:
-        # Get user's health data
-        from ai.health_insights_engine import health_insights_engine
         health_data = health_insights_engine._get_user_health_data(
             user_id=current_user.id,
             days_back=days_back,
@@ -313,7 +328,6 @@ async def get_recommendations(
             )
         
         # Generate recommendations
-        from ai.recommendation_engine import RecommendationEngine
         rec_engine = RecommendationEngine()
         recommendations = rec_engine.generate_recommendations(health_data)
         
@@ -372,7 +386,6 @@ async def get_anomalies(
         List of detected anomalies
     """
     try:
-        # Get user's health data
         health_data = health_insights_engine._get_user_health_data(
             user_id=current_user.id,
             days_back=days_back,
@@ -386,7 +399,6 @@ async def get_anomalies(
             )
         
         # Detect anomalies
-        from ai.anomaly_detector import AnomalyDetector
         anomaly_detector = AnomalyDetector()
         anomalies = anomaly_detector.detect_anomalies(health_data)
         
@@ -443,7 +455,6 @@ async def get_patterns(
         List of identified patterns
     """
     try:
-        # Get user's health data
         health_data = health_insights_engine._get_user_health_data(
             user_id=current_user.id,
             days_back=days_back,
@@ -457,7 +468,6 @@ async def get_patterns(
             )
         
         # Identify patterns
-        from ai.pattern_recognition import PatternRecognizer
         pattern_recognizer = PatternRecognizer()
         patterns = pattern_recognizer.identify_patterns(health_data)
         
@@ -494,7 +504,6 @@ async def get_trends(
         List of trend analyses
     """
     try:
-        # Get user's health data
         health_data = health_insights_engine._get_user_health_data(
             user_id=current_user.id,
             days_back=days_back,
@@ -508,7 +517,6 @@ async def get_trends(
             )
         
         # Analyze trends
-        from ai.pattern_recognition import PatternRecognizer
         pattern_recognizer = PatternRecognizer()
         trends = pattern_recognizer.analyze_trends(health_data)
         
@@ -545,7 +553,6 @@ async def get_health_alerts(
         List of health alerts
     """
     try:
-        # Get user's health data
         health_data = health_insights_engine._get_user_health_data(
             user_id=current_user.id,
             days_back=days_back,
@@ -559,7 +566,6 @@ async def get_health_alerts(
             )
         
         # Detect health alerts
-        from ai.anomaly_detector import AnomalyDetector
         anomaly_detector = AnomalyDetector()
         alerts = anomaly_detector.detect_health_alerts(health_data)
         
@@ -603,28 +609,7 @@ async def get_goal_recommendations(
         )
         
         return {
-            "recommendations": [
-                {
-                    "id": rec.id,
-                    "category": rec.category.value,
-                    "goal_type": rec.goal_type.value,
-                    "title": rec.title,
-                    "description": rec.description,
-                    "target_value": rec.target_value,
-                    "current_value": rec.current_value,
-                    "unit": rec.unit,
-                    "difficulty": rec.difficulty.value,
-                    "timeline_days": rec.timeline_days,
-                    "confidence_score": rec.confidence_score,
-                    "reasoning": rec.reasoning,
-                    "expected_benefits": rec.expected_benefits,
-                    "success_probability": rec.success_probability,
-                    "required_actions": rec.required_actions,
-                    "related_metrics": rec.related_metrics,
-                    "adjustment_triggers": rec.adjustment_triggers
-                }
-                for rec in recommendations
-            ],
+            "recommendations": recommendations,
             "total_count": len(recommendations),
             "generated_at": datetime.now().isoformat()
         }
@@ -668,7 +653,7 @@ async def adjust_goal(
         
         return {
             "adjustment_needed": True,
-            "goal_id": adjustment.goal_id,
+            "goal_id": goal_id,
             "adjustment_type": adjustment.adjustment_type,
             "new_target": adjustment.new_target,
             "reasoning": adjustment.reasoning,
@@ -698,16 +683,7 @@ async def coordinate_goals(
         )
         
         return {
-            "coordinations": [
-                {
-                    "primary_goal_id": coord.primary_goal_id,
-                    "related_goal_ids": coord.related_goal_ids,
-                    "coordination_type": coord.coordination_type,
-                    "impact_description": coord.impact_description,
-                    "optimization_suggestions": coord.optimization_suggestions
-                }
-                for coord in coordinations
-            ],
+            "coordinations": coordinations,
             "total_count": len(coordinations),
             "generated_at": datetime.now().isoformat()
         }
@@ -733,27 +709,7 @@ async def get_achievements(
         )
         
         return {
-            "achievements": [
-                {
-                    "id": ach.id,
-                    "achievement_type": ach.achievement_type.value,
-                    "title": ach.title,
-                    "description": ach.description,
-                    "badge_level": ach.badge_level.value,
-                    "celebration_level": ach.celebration_level.value,
-                    "earned_date": ach.earned_date.isoformat(),
-                    "metric_type": ach.metric_type,
-                    "achievement_value": ach.achievement_value,
-                    "previous_best": ach.previous_best,
-                    "improvement_percentage": ach.improvement_percentage,
-                    "streak_days": ach.streak_days,
-                    "requirements_met": ach.requirements_met,
-                    "next_milestone": ach.next_milestone,
-                    "sharing_message": ach.sharing_message,
-                    "motivation_message": ach.motivation_message
-                }
-                for ach in achievements
-            ],
+            "achievements": achievements,
             "total_count": len(achievements),
             "date_range_days": date_range_days,
             "generated_at": datetime.now().isoformat()
@@ -778,23 +734,9 @@ async def get_user_streaks(
         )
         
         return {
-            "streaks": [
-                {
-                    "id": streak.id,
-                    "metric_type": streak.metric_type,
-                    "current_count": streak.current_count,
-                    "best_count": streak.best_count,
-                    "start_date": streak.start_date.isoformat(),
-                    "last_update": streak.last_update.isoformat(),
-                    "target_value": streak.target_value,
-                    "streak_type": streak.streak_type,
-                    "is_active": streak.is_active,
-                    "milestone_reached": streak.milestone_reached
-                }
-                for streak in streaks
-            ],
+            "streaks": streaks,
             "total_count": len(streaks),
-            "active_streaks": len([s for s in streaks if s.is_active]),
+            "active_streaks": sum(1 for streak in streaks if streak > 0),
             "generated_at": datetime.now().isoformat()
         }
         
@@ -814,8 +756,6 @@ async def create_celebration(
     try:
         # First, get the achievement (this would typically come from a database)
         # For now, we'll create a mock achievement for the celebration
-        from backend.ai.achievement_engine import Achievement, AchievementType, BadgeLevel, CelebrationLevel
-        
         mock_achievement = Achievement(
             id=achievement_id,
             achievement_type=AchievementType.MILESTONE,
@@ -845,7 +785,7 @@ async def create_celebration(
                 "id": celebration.id,
                 "achievement_id": celebration.achievement_id,
                 "celebration_type": celebration.celebration_type,
-                "celebration_level": celebration.celebration_level.value,
+                "celebration_level": celebration.celebration_level,
                 "trigger_date": celebration.trigger_date.isoformat(),
                 "message": celebration.message,
                 "visual_elements": celebration.visual_elements,
@@ -877,22 +817,7 @@ async def get_coaching_messages(
         )
         
         return {
-            "messages": [
-                {
-                    "id": msg.id,
-                    "coaching_type": msg.coaching_type.value,
-                    "title": msg.title,
-                    "message": msg.message,
-                    "timing": msg.timing.value,
-                    "priority": msg.priority,
-                    "target_metrics": msg.target_metrics,
-                    "actionable_steps": msg.actionable_steps,
-                    "expected_outcome": msg.expected_outcome,
-                    "follow_up_days": msg.follow_up_days,
-                    "personalization_factors": msg.personalization_factors
-                }
-                for msg in messages
-            ],
+            "messages": messages,
             "total_count": len(messages),
             "message_count": message_count,
             "generated_at": datetime.now().isoformat()
@@ -955,10 +880,10 @@ async def get_coaching_progress(
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
         
-        health_data = db.query(HealthData).filter(
-            HealthData.user_id == current_user.id,
-            HealthData.recorded_at >= start_date,
-            HealthData.recorded_at <= end_date
+        health_data = db.query(HealthMetricUnified).filter(
+            HealthMetricUnified.user_id == current_user.id,
+            HealthMetricUnified.timestamp >= start_date,
+            HealthMetricUnified.timestamp <= end_date
         ).all()
         
         if not health_data:
@@ -975,11 +900,11 @@ async def get_coaching_progress(
         data_list = []
         for record in health_data:
             data_list.append({
-                'date': record.recorded_at.date(),
+                'date': record.timestamp.date(),
                 'metric_type': record.metric_type,
                 'value': record.value,
                 'unit': record.unit,
-                'source': record.source
+                'source': record.data_source
             })
         
         user_data = pd.DataFrame(data_list)
@@ -1005,7 +930,7 @@ async def get_coaching_progress(
                 })
         
         return {
-            "progress_summary": f"Analyzed {days} days of health data",
+            "progress_summary": progress_analysis.get("summary", "No progress data available"),
             "improvements": progress_analysis.get("improvements", {}),
             "struggles": progress_analysis.get("struggles", {}),
             "focus_areas": focus_areas,

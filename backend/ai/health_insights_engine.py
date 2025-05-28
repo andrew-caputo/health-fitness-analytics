@@ -16,14 +16,35 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 
-from core.database import get_db
-from core.models import HealthMetricUnified, User
+from backend.core.database import get_db
+from backend.core.models import HealthMetricUnified, User
 from .correlation_analyzer import CorrelationAnalyzer
 from .pattern_recognition import PatternRecognizer
 from .anomaly_detector import AnomalyDetector
 from .recommendation_engine import RecommendationEngine
 
 logger = logging.getLogger(__name__)
+
+
+def clean_numpy_data(data: Any) -> Any:
+    """
+    Recursively clean numpy data types from nested dictionaries and lists
+    to ensure JSON serialization compatibility
+    """
+    if isinstance(data, dict):
+        return {key: clean_numpy_data(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [clean_numpy_data(item) for item in data]
+    elif isinstance(data, np.integer):
+        return int(data)
+    elif isinstance(data, np.floating):
+        return float(data)
+    elif isinstance(data, np.ndarray):
+        return data.tolist()
+    elif isinstance(data, (np.bool_, bool)):
+        return bool(data)
+    else:
+        return data
 
 
 class InsightType(Enum):
@@ -111,7 +132,7 @@ class HealthInsightsEngine:
             # Get user's health data
             health_data = self._get_user_health_data(user_id, days_back, db)
             
-            if not health_data:
+            if health_data.empty:
                 logger.warning(f"No health data found for user {user_id}")
                 return []
             
@@ -158,7 +179,7 @@ class HealthInsightsEngine:
         try:
             health_data = self._get_user_health_data(user_id, days_back, db)
             
-            if not health_data:
+            if health_data.empty:
                 return None
             
             # Calculate component scores
@@ -217,8 +238,8 @@ class HealthInsightsEngine:
         metrics = db.query(HealthMetricUnified).filter(
             and_(
                 HealthMetricUnified.user_id == user_id,
-                HealthMetricUnified.recorded_at >= start_date,
-                HealthMetricUnified.recorded_at <= end_date
+                HealthMetricUnified.timestamp >= start_date,
+                HealthMetricUnified.timestamp <= end_date
             )
         ).all()
         
@@ -230,14 +251,20 @@ class HealthInsightsEngine:
         for metric in metrics:
             data.append({
                 'metric_type': metric.metric_type,
-                'value': metric.value,
+                'value': float(metric.value),  # Convert Decimal to float for proper pandas/numpy processing
                 'unit': metric.unit,
-                'source_type': metric.source_type,
-                'recorded_at': metric.recorded_at,
-                'metadata': metric.metadata or {}
+                'source_type': metric.data_source,
+                'recorded_at': metric.timestamp,
+                'metadata': metric.source_specific_data or {}
             })
         
-        return pd.DataFrame(data)
+        df = pd.DataFrame(data)
+        
+        # Ensure numeric columns are properly typed
+        if not df.empty:
+            df['value'] = pd.to_numeric(df['value'], errors='coerce')
+        
+        return df
     
     def _generate_correlation_insights(
         self, 
@@ -261,9 +288,9 @@ class HealthInsightsEngine:
                         description=f"Your {correlation['metric1']} shows a {correlation['strength']:.0%} correlation with {correlation['metric2']}. {correlation['interpretation']}",
                         data_sources=list(health_data['source_type'].unique()),
                         metrics_involved=[correlation['metric1'], correlation['metric2']],
-                        confidence_score=correlation['strength'],
+                        confidence_score=float(correlation['strength']),
                         actionable_recommendations=correlation.get('recommendations', []),
-                        supporting_data=correlation,
+                        supporting_data=clean_numpy_data(correlation),
                         created_at=datetime.utcnow()
                     )
                     insights.append(insight)
@@ -298,9 +325,9 @@ class HealthInsightsEngine:
                     description=f"Your {trend['metric']} has been {direction} by {abs(trend['slope']):.1f}% over the past {trend['period']} days.",
                     data_sources=list(health_data['source_type'].unique()),
                     metrics_involved=[trend['metric']],
-                    confidence_score=trend['confidence'],
+                    confidence_score=float(trend['confidence']),
                     actionable_recommendations=trend.get('recommendations', []),
-                    supporting_data=trend,
+                    supporting_data=clean_numpy_data(trend),
                     created_at=datetime.utcnow()
                 )
                 insights.append(insight)
@@ -333,9 +360,9 @@ class HealthInsightsEngine:
                     description=f"Your {anomaly['metric']} on {anomaly['date']} was {anomaly['deviation']:.1f}% different from your typical pattern.",
                     data_sources=list(health_data['source_type'].unique()),
                     metrics_involved=[anomaly['metric']],
-                    confidence_score=anomaly['confidence'],
+                    confidence_score=float(anomaly['confidence']),
                     actionable_recommendations=anomaly.get('recommendations', []),
-                    supporting_data=anomaly,
+                    supporting_data=clean_numpy_data(anomaly),
                     created_at=datetime.utcnow()
                 )
                 insights.append(insight)
@@ -366,9 +393,9 @@ class HealthInsightsEngine:
                     description=pattern['description'],
                     data_sources=list(health_data['source_type'].unique()),
                     metrics_involved=pattern['metrics'],
-                    confidence_score=pattern['confidence'],
+                    confidence_score=float(pattern['confidence']),
                     actionable_recommendations=pattern.get('recommendations', []),
-                    supporting_data=pattern,
+                    supporting_data=clean_numpy_data(pattern),
                     created_at=datetime.utcnow()
                 )
                 insights.append(insight)
@@ -402,7 +429,7 @@ class HealthInsightsEngine:
                     metrics_involved=achievement['metrics'],
                     confidence_score=1.0,
                     actionable_recommendations=achievement.get('recommendations', []),
-                    supporting_data=achievement,
+                    supporting_data=clean_numpy_data(achievement),
                     created_at=datetime.utcnow()
                 )
                 insights.append(insight)
@@ -433,9 +460,9 @@ class HealthInsightsEngine:
                     description=rec['description'],
                     data_sources=list(health_data['source_type'].unique()),
                     metrics_involved=rec['metrics'],
-                    confidence_score=rec['confidence'],
+                    confidence_score=float(rec['confidence']),
                     actionable_recommendations=rec['actions'],
-                    supporting_data=rec,
+                    supporting_data=clean_numpy_data(rec),
                     created_at=datetime.utcnow()
                 )
                 insights.append(insight)

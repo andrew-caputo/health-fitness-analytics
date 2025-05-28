@@ -10,6 +10,7 @@ from backend.api.v1.endpoints import (
     preferences,
     apple_health,
     csv_import,
+    ai_insights,
 )
 from backend.api.v1.endpoints.data_sources import common, withings, oura, fitbit, whoop, strava, fatsecret
 from backend.api.v1.endpoints.mobile import auth as mobile_auth, healthkit, user as mobile_user
@@ -49,6 +50,13 @@ api_router.include_router(
     insights.router,
     prefix="/insights",
     tags=["insights"]
+)
+
+# AI Insights endpoints (Phase 4D)
+api_router.include_router(
+    ai_insights.router,
+    prefix="/ai",
+    tags=["ai insights"]
 )
 
 # Chat endpoints
