@@ -14,13 +14,13 @@ struct ContentView: View {
         .onAppear {
             // Check for stored authentication on app launch
             if networkManager.isAuthenticated {
-                Task {
+                    Task {
                     do {
                         // Verify that the stored token is still valid
                         _ = try await networkManager.verifyToken()
                     } catch {
                         // Token is invalid, clear authentication
-                        await networkManager.logout()
+                        try? await networkManager.logout()
                     }
                 }
             }
@@ -29,5 +29,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+        ContentView()
 } 

@@ -79,7 +79,7 @@ async def test_lazy_import():
             "timestamp": datetime.utcnow().isoformat(),
             "test_passed": False,
             "error_type": type(e).__name__
-        }
+    }
 
 # Pydantic models for API responses
 class HealthInsightResponse(BaseModel):
@@ -1048,7 +1048,7 @@ async def get_coaching_progress(
         
     except Exception as e:
         logger.error(f"Error getting coaching progress: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get coaching progress")
+        raise HTTPException(status_code=500, detail="Failed to get coaching progress") 
 
 @router.get("/health-score-lazy", response_model=HealthScoreResponse)
 async def get_health_score_lazy(
