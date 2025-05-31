@@ -18,7 +18,7 @@ def create_health_metric(metric_in: HealthMetricCreate, db: Session = Depends(ge
     Create new health metric.
     """
     metric = HealthMetric(
-        **metric_in.dict(),
+        **metric_in.model_dump(),
         user_id=current_user.id,
     )
     db.add(metric)
@@ -74,7 +74,7 @@ def update_health_metric(metric_id: str, metric_in: HealthMetricUpdate, db: Sess
             detail="Health metric not found",
         )
     
-    for field, value in metric_in.dict(exclude_unset=True).items():
+    for field, value in metric_in.model_dump(exclude_unset=True).items():
         setattr(metric, field, value)
     
     db.add(metric)

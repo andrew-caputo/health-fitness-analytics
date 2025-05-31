@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 
@@ -55,8 +55,8 @@ class UserPreferencesService:
             body_composition_source=preferences_data.body_composition_source,
             priority_rules=preferences_data.priority_rules,
             conflict_resolution=preferences_data.conflict_resolution,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         self.db.add(preferences)
@@ -77,18 +77,18 @@ class UserPreferencesService:
         
         if not preferences:
             # Create new preferences if they don't exist
-            create_data = UserDataSourcePreferencesCreate(**preferences_data.dict())
+            create_data = UserDataSourcePreferencesCreate(**preferences_data.model_dump())
             return self.create_user_preferences(user_id, create_data)
         
         # Validate data sources
         self._validate_data_sources(preferences_data)
         
         # Update fields that are provided
-        update_data = preferences_data.dict(exclude_unset=True)
+        update_data = preferences_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(preferences, field, value)
         
-        preferences.updated_at = datetime.utcnow()
+        preferences.updated_at = datetime.now(UTC)
         
         self.db.commit()
         self.db.refresh(preferences)

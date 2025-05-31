@@ -88,7 +88,7 @@ def create_goal(goal_in: UserGoalCreate, db: Session = Depends(get_db), current_
         )
     
     goal = UserGoal(
-        **goal_in.dict(),
+        **goal_in.model_dump(),
         user_id=current_user.id,
     )
     db.add(goal)
@@ -175,7 +175,7 @@ def update_goal(goal_id: str, goal_in: UserGoalUpdate, db: Session = Depends(get
             detail="Overlapping goal of the same type exists",
         )
     
-    for field, value in goal_in.dict(exclude_unset=True).items():
+    for field, value in goal_in.model_dump(exclude_unset=True).items():
         setattr(goal, field, value)
     
     db.add(goal)

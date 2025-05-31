@@ -654,7 +654,7 @@ async def get_health_alerts(
 @router.get("/goals/recommendations")
 async def get_goal_recommendations(
     max_goals: int = Query(5, ge=1, le=10),
-    difficulty: Optional[str] = Query(None, regex="^(easy|moderate|challenging|ambitious)$"),
+    difficulty: Optional[str] = Query(None, pattern="^(easy|moderate|challenging|ambitious)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

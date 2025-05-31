@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Any, Dict, List, Optional
 import asyncio
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
 
@@ -25,7 +25,8 @@ class HealthKitMetric(BaseModel):
     device_name: Optional[str] = Field(None, description="Device name that recorded the metric")
     metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata from HealthKit")
     
-    @validator('metric_type')
+    @field_validator('metric_type')
+    @classmethod
     def validate_metric_type(cls, v):
         allowed_types = {
             # Activity & Fitness
@@ -50,9 +51,10 @@ class HealthKitMetric(BaseModel):
 class HealthKitBatchUpload(BaseModel):
     metrics: List[HealthKitMetric] = Field(..., description="List of health metrics to upload")
     device_info: Optional[Dict[str, str]] = Field(None, description="Device information (iOS version, app version, etc.)")
-    sync_timestamp: datetime = Field(default_factory=datetime.utcnow, description="When this sync was initiated")
+    sync_timestamp: datetime = Field(default_factory=datetime.now, description="When this sync was initiated")
     
-    @validator('metrics')
+    @field_validator('metrics')
+    @classmethod
     def validate_metrics_not_empty(cls, v):
         if not v:
             raise ValueError('Metrics list cannot be empty')
@@ -139,7 +141,7 @@ async def batch_upload_healthkit_data(
                         "device_name": metric_data.device_name,
                         "metadata": metric_data.metadata
                     },
-                    created_at=datetime.utcnow()
+                    created_at=datetime.now(UTC)
                 )
                 
                 db.add(health_metric)
@@ -163,7 +165,7 @@ async def batch_upload_healthkit_data(
             "failed_count": failed_count,
             "total_count": len(upload_data.metrics),
             "errors": errors[:10] if errors else None,  # Limit error list
-            "next_sync_recommended": datetime.utcnow() + timedelta(hours=1)
+            "next_sync_recommended": datetime.now(UTC) + timedelta(hours=1)
         }
         
     except Exception as e:
@@ -194,20 +196,20 @@ async def get_sync_status(
             status="never_synced",
             processed_count=0,
             failed_count=0,
-            next_sync_recommended=datetime.utcnow()
+            next_sync_recommended=datetime.now(UTC)
         )
     
     # Get last sync time from most recent HealthKit metric
     last_sync = max(metric.created_at for metric in healthkit_metrics)
     
     # Calculate next sync recommendation based on data frequency
-    hours_since_sync = (datetime.utcnow() - last_sync).total_seconds() / 3600
+    hours_since_sync = (datetime.now(UTC) - last_sync).total_seconds() / 3600
     
     # Recommend sync every 4 hours for active users, 12 hours for less active
     if hours_since_sync < 4:
         next_sync = last_sync + timedelta(hours=4)
     else:
-        next_sync = datetime.utcnow()
+        next_sync = datetime.now(UTC)
     
     return SyncStatus(
         status="completed",

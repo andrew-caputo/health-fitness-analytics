@@ -2,7 +2,7 @@ import pytest
 import time
 from uuid import uuid4
 from unittest.mock import AsyncMock, patch, MagicMock
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from fastapi.testclient import TestClient
 
 from backend.core.withings.client import WithingsClient
@@ -102,7 +102,7 @@ class TestWithingsSyncService:
             source_type="withings",
             access_token="test_token",
             refresh_token="test_refresh",
-            token_expires_at=datetime.utcnow() + timedelta(hours=1),
+            token_expires_at=datetime.now(UTC) + timedelta(hours=1),
             status="connected"
         )
         db_session.add(connection)
