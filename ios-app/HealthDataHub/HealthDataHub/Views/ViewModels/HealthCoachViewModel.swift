@@ -109,7 +109,7 @@ class HealthCoachViewModel: ObservableObject {
                 isRead: false
             )
         ]
-        
+    
         // Mock behavioral interventions
         behavioralInterventions = [
             BehavioralIntervention(
@@ -167,8 +167,8 @@ class HealthCoachViewModel: ObservableObject {
                 id: "focus1",
                 title: "Sleep Optimization",
                 description: "Improving sleep quality and consistency",
-                priority: .high,
-                icon: "bed.double.fill",
+            priority: .high,
+            icon: "bed.double.fill",
                 color: .purple,
                 actionItems: ["Maintain bedtime routine", "Track sleep patterns"],
                 expectedImpact: "Better energy and recovery",

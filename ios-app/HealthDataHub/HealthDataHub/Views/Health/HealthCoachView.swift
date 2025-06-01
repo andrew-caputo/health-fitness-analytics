@@ -55,14 +55,14 @@ struct HealthCoachView: View {
             }
             .navigationTitle("Health Coach")
             .navigationBarTitleDisplayMode(.large)
-        }
-        .sheet(isPresented: $showingInterventionDetail) {
-            if let intervention = selectedIntervention {
+            }
+            .sheet(isPresented: $showingInterventionDetail) {
+                if let intervention = selectedIntervention {
                 InterventionDetailView(
                     intervention: intervention,
                     onProgressUpdate: { progress in
                         viewModel.updateInterventionProgress(intervention.id, progress: progress)
-                    }
+                }
                 )
             }
         }
@@ -92,9 +92,9 @@ struct CoachingSummaryCard: View {
                     .font(.title2)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Your AI Health Coach")
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                Text("Your AI Health Coach")
+                    .font(.headline)
+                    .fontWeight(.semibold)
                     
                     Text("Personalized guidance for optimal health")
                         .font(.caption)
@@ -117,7 +117,7 @@ struct CoachingSummaryCard: View {
             if !viewModel.focusAreas.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Today's Focus")
-                        .font(.subheadline)
+                .font(.subheadline)
                         .fontWeight(.medium)
                     
                     ForEach(viewModel.focusAreas.prefix(2)) { area in
@@ -181,7 +181,7 @@ struct CoachingFilterTabs: View {
                         onTap: {
                             selectedFilter = type
                             onFilterChange(type)
-                        }
+                    }
                     )
                 }
             }
@@ -212,9 +212,9 @@ struct CoachingFilterTab: View {
                     .fill(isSelected ? type.color.opacity(0.2) : Color(.systemGray6))
             )
             .foregroundColor(isSelected ? type.color : .secondary)
-        }
+                }
         .buttonStyle(PlainButtonStyle())
-    }
+            }
 }
 
 // MARK: - Messages Section
@@ -226,15 +226,15 @@ struct MessagesSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Recent Messages")
-                .font(.headline)
-                .fontWeight(.semibold)
+                    .font(.headline)
+                    .fontWeight(.semibold)
             
             ForEach(messages.prefix(5)) { message in
                 CoachingMessageCard(
                     message: message,
                     onTap: {
                         onMessageTap(message)
-                    }
+                }
                 )
             }
         }
@@ -258,7 +258,7 @@ struct InterventionsSection: View {
                     intervention: intervention,
                     onTap: {
                         onInterventionTap(intervention)
-                    }
+                }
                 )
             }
         }
@@ -273,15 +273,15 @@ struct HistorySection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Recent Activity")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
             ForEach(history.prefix(5)) { entry in
                 CoachingHistoryRow(entry: entry)
+                        }
+                    }
+                }
             }
-        }
-    }
-}
 
 // MARK: - Message Card
 
@@ -305,7 +305,7 @@ struct CoachingMessageCard: View {
                         
                         if let timestamp = message.timestamp {
                             Text(timestamp, style: .relative)
-                                .font(.caption)
+                            .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -344,7 +344,7 @@ struct CoachingMessageCard: View {
                                 Text(item)
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
-                            }
+                    }
                         }
                     }
                     .padding(.top, 4)
@@ -383,8 +383,8 @@ struct InterventionCard: View {
                         if let title = intervention.title {
                             Text(title)
                                 .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .multilineTextAlignment(.leading)
+                            .fontWeight(.semibold)
+                            .multilineTextAlignment(.leading)
                         }
                         
                         Text(intervention.interventionType.displayName)
@@ -402,9 +402,9 @@ struct InterventionCard: View {
                 if let description = intervention.description {
                     Text(description)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                    .foregroundColor(.secondary)
                         .lineLimit(2)
-                        .multilineTextAlignment(.leading)
+                    .multilineTextAlignment(.leading)
                 }
                 
                 if let progress = intervention.progress {

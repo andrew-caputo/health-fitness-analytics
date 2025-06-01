@@ -173,7 +173,7 @@ struct AppPermission: Identifiable {
             }
         }
     }
-}
+} 
 
 // MARK: - Supporting Enums
 

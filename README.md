@@ -55,7 +55,7 @@ A comprehensive AI-powered health analytics platform with **complete end-to-end 
 - **✅ iOS HealthKit**: **FULLY INTEGRATED** - Complete end-to-end working
 - **Apple Health Export**: Complete health data migration support
 - **Withings**: Smart scales, sleep tracking devices
-- **Oura**: Sleep, recovery, and activity monitoring  
+- **Oura**: Sleep, recovery, and activity monitoring
 - **Fitbit**: Activity tracking and heart rate data
 - **WHOOP**: Recovery, strain, and sleep analysis
 - **Strava**: Exercise activities and performance metrics
