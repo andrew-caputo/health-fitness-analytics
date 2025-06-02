@@ -1344,3 +1344,27 @@ Total metrics: 1
 *The Health & Fitness Analytics Platform stands as a complete, professional, production-ready health technology solution with advanced AI capabilities, seamless user experience, and comprehensive feature set. Ready for the next phase: real-world deployment and user adoption.* 
 
 🚀 **LAUNCH READY!** 🚀 
+
+## Phase 5 Week 1 Day 4 Continued: Settings View Refactoring & User Validation (June 1, 2025) ✅
+
+### UI Component Refactoring
+- **`CategorySourceDetailView.swift` Created**:
+    - Extracted the `CategorySourceDetailView` struct, `AvailableDataSourceRow` struct, and related `HealthCategory`/`PreferenceDataSource` extensions from `DataSourceSettingsView.swift` into a new dedicated file: `health-fitness-analytics/ios-app/HealthDataHub/HealthDataHub/Views/Settings/CategorySourceDetailView.swift`.
+    - This promotes modularity and reusability for managing individual category source preferences.
+- **`DataSourceSettingsView.swift` Updated**:
+    - Simplified the main settings view by removing the extracted components.
+    - NavigationLinks now correctly point to the standalone `CategorySourceDetailView`.
+    - Ensured it uses the `DataSourceSettingsViewModel`.
+
+### User Validation (Performed by User)
+- **Core Onboarding Flow Confirmed Working**:
+    - User successfully registered a new user (`test14`), skipped onboarding, logged out.
+    - User successfully registered another new user (`test15`), completed the data source selection in the onboarding flow, and reached the main dashboard.
+    - This validates the functionality implemented in Day 3 and earlier Day 4.
+- **Known Issue Monitored**:
+    - The `setsockopt SO_NOWAKEFROMSLEEP` errors continue to appear in the logs. While functionality is not currently impacted, this is being monitored.
+
+### Next Steps
+- Build and test the refactored `DataSourceSettingsView` and `CategorySourceDetailView` on a simulator or device.
+- Verify navigation and functionality for selecting preferred data sources within settings.
+- Proceed with real device testing (Day 5 tasks) if settings view validation is successful.

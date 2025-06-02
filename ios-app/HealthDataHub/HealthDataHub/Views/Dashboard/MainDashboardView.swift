@@ -169,7 +169,7 @@ struct DashboardHomeView: View {
                                 icon: "chart.line.uptrend.xyaxis",
                                 title: "View Detailed Charts",
                                 action: {
-                                    // Navigate to charts
+                                    // TODO: Navigate to charts view
                                 }
                             )
                             
@@ -177,7 +177,7 @@ struct DashboardHomeView: View {
                                 icon: "person.2.fill",
                                 title: "Connected Apps",
                                 action: {
-                                    // Navigate to connected apps
+                                    // TODO: Navigate to connected apps settings
                                 }
                             )
                         }
@@ -191,6 +191,8 @@ struct DashboardHomeView: View {
             .refreshable {
                 healthKitManager.syncLatestData()
             }
+        }
+        .onAppear {
         }
     }
     
@@ -325,6 +327,10 @@ struct SettingsView: View {
                 
                 // Data Management
                 Section("Data Management") {
+                    NavigationLink(destination: DataSourceSettingsView()) {
+                        Label("Data Sources", systemImage: "apps.iphone")
+                    }
+                    
                     NavigationLink(destination: PrivacyDashboardView()) {
                         Label("Privacy Dashboard", systemImage: "lock.shield")
                     }

@@ -8,11 +8,12 @@ class NetworkManager: ObservableObject {
     @Published var isOnline = true
     @Published var isAuthenticated = false
     @Published var currentUser: User?
-    private let baseURL = "http://localhost:8001"
-    private let session = URLSession.shared
+    private let baseURL = "http://192.168.2.120:8001"
+    private var session: URLSession
     private var cancellables = Set<AnyCancellable>()
     
     private init() {
+        self.session = URLSession(configuration: .default)
         startNetworkMonitoring()
     }
     
@@ -51,6 +52,46 @@ class NetworkManager: ObservableObject {
         }
         
         return try JSONDecoder().decode(U.self, from: data)
+    }
+    
+    // MARK: - Request Method Without Body (for GET/DELETE)
+    
+    func requestWithoutBody<T: Codable>(
+        endpoint: String,
+        method: HTTPMethod
+    ) async throws -> T {
+        let url = URL(string: baseURL + endpoint)!
+        var request = URLRequest(url: url)
+        request.httpMethod = method.rawValue
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        if let token = getAuthToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        // Explicitly do NOT set httpBody for GET/DELETE requests
+        
+        do {
+            let (data, response) = try await session.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw NetworkError.invalidResponse
+            }
+            
+            guard 200...299 ~= httpResponse.statusCode else {
+                // Try to extract error message from response
+                if let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let detail = errorData["detail"] as? String {
+                    print("API Error: \(detail)")
+                }
+                throw NetworkError.httpError(httpResponse.statusCode)
+            }
+            
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch {
+            print("Network request failed for \(endpoint): \(error)")
+            throw error
+        }
     }
     
     // MARK: - Form Request Method for OAuth2
@@ -108,16 +149,40 @@ class NetworkManager: ObservableObject {
         // Store token
         try storeToken(response.access_token, key: "access_token")
         
-        isAuthenticated = true
+        await MainActor.run { // Ensure UI update is on main thread
+            self.isAuthenticated = true
+        }
+        // We should also fetch the user profile here and set self.currentUser
+        // For now, just returning token as per original logic
         return response.access_token
     }
     
     func logout() async throws {
         // Clear stored tokens locally
         clearTokens()
-        isAuthenticated = false
+
+        // Invalidate the current session and cancel its tasks
+        session.invalidateAndCancel()
         
-        // Note: Backend doesn't have logout endpoint, so we just clear local state
+        // Create a new, pristine URLSessionConfiguration instance
+        let newConfiguration = URLSessionConfiguration.default
+        // Optionally: You could further customize newConfiguration here if needed, e.g.:
+        // newConfiguration.timeoutIntervalForRequest = 30 // seconds
+        // newConfiguration.waitsForConnectivity = true
+        // newConfiguration.urlCache = nil // Explicitly clear cache for the new configuration
+        // newConfiguration.httpCookieStorage = nil // Explicitly clear cookies for the new configuration
+        
+        // Create a new URLSession instance with the fresh configuration
+        self.session = URLSession(configuration: newConfiguration)
+
+        // Update published properties on the main thread
+        await MainActor.run {
+            isAuthenticated = false
+            currentUser = nil
+        }
+        
+        // Note: Backend doesn't have a formal logout endpoint for session invalidation,
+        // so we just clear local state and fully reset the URL session and its configuration.
     }
     
     func verifyToken() async throws -> Bool {
@@ -160,7 +225,7 @@ class NetworkManager: ObservableObject {
         }
         
         let registerRequest = RegisterRequest(email: email, password: password)
-        let response: RegisterResponse = try await request(
+        let _: RegisterResponse = try await request(
             endpoint: "/api/v1/auth/register",
             method: .POST,
             body: registerRequest
@@ -208,6 +273,65 @@ class NetworkManager: ObservableObject {
         return response
     }
     
+    // MARK: - Data Source Preferences Methods
+    
+    func getAvailableDataSources() async throws -> [PreferenceDataSource] {
+        let response: [PreferenceDataSource] = try await requestWithoutBody(
+            endpoint: "/api/v1/preferences/available-sources",
+            method: .GET
+        )
+        return response
+    }
+    
+    func getUserDataSourcePreferences() async throws -> UserPreferencesResponse {
+        let response: UserPreferencesResponse = try await requestWithoutBody(
+            endpoint: "/api/v1/preferences/",
+            method: .GET
+        )
+        return response
+    }
+    
+    func updateUserDataSourcePreferences(_ preferences: UserDataSourcePreferences) async throws -> UserDataSourcePreferences {
+        let response: UserDataSourcePreferences = try await request(
+            endpoint: "/api/v1/preferences/",
+            method: .PUT,
+            body: preferences
+        )
+        return response
+    }
+    
+    func createUserDataSourcePreferences(_ preferences: UserDataSourcePreferences) async throws -> UserDataSourcePreferences {
+        let response: UserDataSourcePreferences = try await request(
+            endpoint: "/api/v1/preferences/",
+            method: .POST,
+            body: preferences
+        )
+        return response
+    }
+    
+    func getCategorySourceInfo(category: HealthCategory) async throws -> CategorySourceInfo {
+        let response: CategorySourceInfo = try await requestWithoutBody(
+            endpoint: "/api/v1/preferences/category/\(category.rawValue)/sources",
+            method: .GET
+        )
+        return response
+    }
+    
+    func setPreferredSourceForCategory(category: HealthCategory, sourceName: String) async throws {
+        let formData = ["source_name": sourceName]
+        let _: EmptyResponse = try await performFormRequest(
+            endpoint: "/api/v1/preferences/category/\(category.rawValue)/set-preferred",
+            formData: formData
+        )
+    }
+    
+    func deleteUserDataSourcePreferences() async throws {
+        let _: EmptyResponse = try await requestWithoutBody(
+            endpoint: "/api/v1/preferences/",
+            method: .DELETE
+        )
+    }
+    
     // MARK: - Helper Methods
     
     private func getAuthToken() -> String? {
@@ -235,6 +359,8 @@ class NetworkManager: ObservableObject {
 }
 
 // MARK: - Supporting Types
+
+struct EmptyRequest: Codable {}
 
 struct HealthDataRequest<T: Codable>: Codable {
     let data: T

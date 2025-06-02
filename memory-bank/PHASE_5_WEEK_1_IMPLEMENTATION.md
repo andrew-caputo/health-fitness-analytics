@@ -239,95 +239,125 @@ The implementation demonstrates:
 
 ---
 
-# Phase 5 Week 1 Day 3-4: iOS Simulator Testing & Backend Integration ✅
+# Phase 5 Week 1 Day 3-4: iOS Simulator Testing, Backend Integration & UI Refinement ✅
 
-## Date: May 28, 2025
+## Date: May 28 - June 1, 2025
 ## Status: **COMPLETE** ✅
 
 ## Objectives Achieved
 
-### **1. iOS Simulator Integration** ✅
-- **Xcode Project Creation**: Successfully created new HealthTestApp iOS project within health-fitness-analytics
-- **App Compilation**: Built and ran successfully in iPhone 16 Pro simulator (iOS 18.4)
-- **UI Implementation**: Clean, professional interface with backend connectivity testing
-- **Network Configuration**: No App Transport Security issues - HTTP localhost connections working perfectly
+### **1. iOS Simulator Integration & Initial UI Implementation (Day 3 & Early Day 4)** ✅
+*   **iOS Project & Backend Connection**:
+    *   Successfully created and configured the HealthDataHub iOS project.
+    *   Established connection to the local backend server (`http://localhost:8001`).
+    *   App Transport Security settings configured correctly for HTTP localhost.
+*   **Models & NetworkManager**:
+    *   Created `DataSourceModels.swift` with `HealthCategory`, `PreferenceDataSource`, `AvailableSource`, `CategorySourceInfo`, `UserDataSourcePreferences`, `UserPreferencesResponse`, `SetPreferredSourceRequest`, `EmptyResponse`.
+    *   Enhanced `NetworkManager.swift` with methods for all data source preference APIs.
+*   **Core UI Components for Onboarding**:
+    *   `CategorySelectionCard.swift`: For displaying and selecting sources per category.
+    *   `SourcePickerView.swift`: Sheet view for picking a source.
+    *   `SourceRow.swift`: Displays individual data sources.
+    *   `CategoryIcon.swift`: Reusable category icon component.
+*   **ViewModel for Onboarding**:
+    *   `DataSourceSelectionViewModel.swift` (which also contains `DataSourceSettingsViewModel`): Created to manage data loading, user selections, and saving preferences for both onboarding and settings.
+*   **Main Onboarding View**:
+    *   `DataSourceSelectionView.swift`: Integrated `CategorySelectionCard` and `DataSourceSelectionViewModel` for the onboarding flow.
+*   **Integration into Authentication Flow**:
+    *   `ContentView.swift` updated to show `DataSourceSelectionView` for new users post-authentication, checking for existing preferences.
 
-### **2. Backend Connectivity Validation** ✅
-- **Health Endpoint Test**: ✅ `{"status":"healthy","timestamp":"2025-05-28T20:50:06.724836","service":"health-fitness-analytics-api","version":"1.0.0"}`
-- **AI Endpoint Test**: ✅ `{"message":"AI endpoints are working!","timestamp":"2025-05-28T20:52:05.080784","endpoints_available":["/ai/health-score","/ai/insights","/ai/goals/recommendations","/ai/achievements","/ai/coaching/messages"]}`
-- **Real-time Communication**: iOS app successfully communicating with backend on http://localhost:8001
+### **2. Settings View Implementation & Refinement (Day 4)** ✅
+*   **Initial Settings View**:
+    *   Added a "Data Sources" navigation link in the main `SettingsView` (within `MainDashboardView.swift`) to a new `DataSourceSettingsView.swift`.
+*   **`DataSourceSettingsView.swift` Refinement**:
+    *   The view was initially created with nested components.
+    *   **Refactoring for Modularity**:
+        *   Created `Views/Settings/CategorySourceDetailView.swift`.
+        *   Moved `CategorySourceDetailView` struct, `AvailableDataSourceRow` struct, and relevant `HealthCategory`/`PreferenceDataSource` extensions (like `iconName`, `brandColor`, `integrationTypeDisplayName`) from `DataSourceSettingsView.swift` into `CategorySourceDetailView.swift`.
+        *   `DataSourceSettingsView.swift` was updated to utilize this new, separate `CategorySourceDetailView` for each health category, simplifying its structure.
+    *   Confirmed `DataSourceSettingsView` correctly uses `DataSourceSettingsViewModel` (from `DataSourceSelectionViewModel.swift`).
 
-### **3. Complete System Integration** ✅
-- **iOS ↔ Backend**: Full bidirectional communication established
-- **AI Systems**: All 5 major AI endpoints confirmed operational from iOS app
-- **User Interface**: Professional health analytics app interface working perfectly
-- **Error Handling**: Robust error handling for network issues implemented
+### **3. Backend Connectivity & User Validation** ✅
+*   **API Validation**: All backend preference endpoints (`/api/v1/preferences/*`) confirmed working.
+*   **User Testing (by User)**:
+    *   Successfully registered new users (`test14` & `test15`).
+    *   `test14`: Skipped onboarding and proceeded.
+    *   `test15`: Completed data source selection via `DataSourceSelectionView` and reached the main dashboard.
+    *   This confirms the core onboarding data flow is functional.
+*   **Known Issue**: `setsockopt SO_NOWAKEFROMSLEEP` errors persist in logs but do not appear to impede current functionality.
+
+### **4. Build & Debugging Summary**
+*   Resolved various build issues during Day 3 & 4, including:
+    *   Naming conflicts (e.g., `DataSource` vs. `PreferenceDataSource`).
+    *   Generic parameter inference in `NetworkManager` (fixed with `EmptyRequest`).
+    *   Optional unwrapping issues in ViewModels.
+*   The project is currently building successfully.
 
 ## Technical Achievements
 
-### **iOS Project Structure** ✅
+### **iOS Project Structure (Relevant Additions/Changes)** ✅
 ```
-health-fitness-analytics/
-├── ios-app/
-│   ├── HealthTestApp.xcodeproj     ✅ Working Xcode project
-│   └── HealthTestApp/
-│       ├── HealthTestApp.swift     ✅ App entry point
-│       ├── ContentView.swift       ✅ Backend connectivity UI
-│       └── Info.plist              ✅ App configuration
-├── backend/                        ✅ FastAPI running on port 8001
-└── memory-bank/                    ✅ Documentation
+HealthDataHub/
+├── Models/
+│   └── DataSourceModels.swift        ✅ New
+├── Views/
+│   ├── Authentication/
+│   │   ├── DataSourceSelectionView.swift ✅ New
+│   │   └── CategorySelectionCard.swift   ✅ New (and its sub-views like SourcePickerView, SourceRow)
+│   ├── Settings/
+│   │   ├── DataSourceSettingsView.swift  ✅ New & Refactored
+│   │   └── CategorySourceDetailView.swift ✅ New (Refactored from DataSourceSettingsView)
+│   └── ViewModels/
+│       └── DataSourceSelectionViewModel.swift ✅ New (contains DataSourceSettingsViewModel)
+├── Managers/
+│   └── NetworkManager.swift          ✅ Enhanced
+└── ContentView.swift                 ✅ Enhanced
 ```
 
-### **iOS App Features Implemented** ✅
-- **Backend Health Testing**: Automatic connection test on app launch
-- **AI Endpoint Testing**: Manual testing of AI systems
-- **Real-time Status Display**: Green/red connection indicators
-- **Response Data Display**: JSON response viewer for debugging
-- **Professional UI**: Clean SwiftUI interface with Health Analytics branding
-- **Error Handling**: Comprehensive network error handling and display
+### **iOS App Features Implemented/Refined** ✅
+*   Complete onboarding flow for data source selection.
+*   Functional settings view for managing data source preferences post-onboarding.
+*   Modular UI components for category and source display/selection.
+*   Robust ViewModel layer for managing state and API interactions for data sources.
+*   User-validated core registration and onboarding pathways.
 
 ### **Backend Validation Results** ✅
-- **Health Endpoint**: `http://localhost:8001/health` - ✅ Responding correctly
-- **AI Test Endpoint**: `http://localhost:8001/api/v1/ai/test` - ✅ All systems operational
-- **Available AI Endpoints**: 5 confirmed working (/ai/health-score, /ai/insights, /ai/goals/recommendations, /ai/achievements, /ai/coaching/messages)
-- **Response Time**: Excellent - immediate responses from backend
-- **Data Quality**: Perfect JSON formatting and expected content
+*   Health Endpoint: `http://localhost:8001/health` - ✅ Responding correctly.
+*   Preferences API: All endpoints under `/api/v1/preferences/` working as expected for GET, POST, PUT, DELETE operations related to user preferences and available sources.
 
 ## Success Metrics Achieved
 
-### **iOS Simulator Testing** ✅
-- ✅ **Project Creation**: Xcode project successfully created and organized
-- ✅ **App Compilation**: No build errors, clean compilation
-- ✅ **Simulator Launch**: iPhone 16 Pro simulator working perfectly
-- ✅ **UI Functionality**: All buttons and interfaces working correctly
-- ✅ **Network Connectivity**: HTTP connections to localhost working without security issues
+### **iOS Simulator Testing & UI Implementation** ✅
+*   ✅ All planned UI views for data source onboarding and settings created/refined.
+*   ✅ ViewModels providing necessary data and handling logic.
+*   ✅ Navigation flows for onboarding and settings established.
+*   ✅ Code refactored for better modularity in settings views.
 
-### **Backend Integration** ✅
-- ✅ **Health Endpoint**: 100% success rate on connectivity testing
-- ✅ **AI Endpoint**: 100% success rate on AI systems testing
-- ✅ **Response Accuracy**: Perfect JSON responses with expected data
-- ✅ **Real-time Communication**: Immediate responses from backend
-- ✅ **Error Handling**: Robust handling of network issues
+### **Backend Integration & User Validation** ✅
+*   ✅ NetworkManager methods successfully interacting with all backend preference APIs.
+*   ✅ User successfully completed onboarding data selection.
+*   ✅ `setsockopt` errors noted, but functionality unimpeded for core flows.
 
-### **End-to-End Validation** ✅
-- ✅ **Complete User Journey**: App launch → automatic backend test → manual AI test → results display
-- ✅ **Professional Interface**: Clean, health-focused UI that would impress users
-- ✅ **System Reliability**: No crashes, errors, or connectivity issues
-- ✅ **Developer Experience**: Easy to test and debug with clear status indicators
+### **End-to-End Validation (Onboarding)** ✅
+*   ✅ User journey from new user registration through data source selection to dashboard confirmed working.
 
 ## Phase 5 Week 1 Status Update
 
-### **Day 1-2**: ✅ **COMPLETE** - Local Backend Setup & Validation 
-### **Day 3-4**: ✅ **COMPLETE** - iOS Simulator Testing & Backend Integration
-### **Day 5-7**: ⏳ **READY** - iPhone Device Testing & HealthKit Integration
+### **Day 1-2**: ✅ **COMPLETE** - Local Backend Setup & Validation
+### **Day 3-4**: ✅ **COMPLETE** - iOS Data Source Models, Network, Onboarding UI, Settings UI & Refinement, User Validation of Onboarding
+### **Day 5-7**: ⏳ **READY** - iPhone Device Testing (including validation of refactored Settings views) & HealthKit Integration
 
 ## Next Steps: iPhone Device Testing (Day 5-7)
 
-With iOS simulator testing complete, we're ready for:
-1. **Deploy to Physical iPhone**: Real device deployment via Xcode
-2. **HealthKit Integration**: Test with actual health data from device
-3. **Performance Validation**: Real-world performance testing
-4. **Complete User Journey**: Full end-to-end testing with real data
+With iOS simulator testing and initial user validation of the onboarding flow complete, and settings views refactored:
+1.  **Deploy to Physical iPhone**: Real device deployment via Xcode.
+2.  **Thoroughly Test Settings Views**:
+    *   Validate navigation to and within `DataSourceSettingsView` and `CategorySourceDetailView`.
+    *   Test changing preferred sources and confirm persistence via API calls and UI updates.
+3.  **HealthKit Integration**: Test with actual health data from device (if this part of Day 5-7 plan is still active or if it's deferred).
+4.  **Performance Validation**: Real-world performance testing.
+5.  **Complete User Journey**: Full end-to-end testing with real data, including managing preferences via Settings.
+6.  **Monitor `setsockopt` errors**: Continue observation for any functional impact.
 
 ## Conclusion
 

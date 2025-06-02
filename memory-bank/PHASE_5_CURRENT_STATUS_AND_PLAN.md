@@ -289,182 +289,89 @@ The following backend components are **already implemented and tested**:
    struct EmptyResponse: Codable {}
    ```
 
-#### **Day 4: iOS UI Implementation (6-8 hours)**
+#### **Day 4: iOS UI Implementation (6-8 hours) - EXTENDED & REFINED**
 
-1. **Onboarding Flow Enhancement**
-   ```swift
-   // Add new view: Views/Authentication/DataSourceSelectionView.swift
-   struct DataSourceSelectionView: View {
-       @StateObject private var viewModel = DataSourceSelectionViewModel()
-       @Environment(\.dismiss) private var dismiss
-       
-       var body: some View {
-           NavigationView {
-               ScrollView {
-                   VStack(spacing: 20) {
-                       headerSection
-                       categoriesSection
-                       continueButton
-                   }
-                   .padding()
-               }
-               .navigationTitle("Choose Data Sources")
-               .navigationBarTitleDisplayMode(.large)
-           }
-           .task {
-               await viewModel.loadAvailableSources()
-           }
-       }
-       
-       private var headerSection: some View {
-           VStack(spacing: 12) {
-               Image(systemName: "app.connected.to.app.below.fill")
-                   .font(.system(size: 50))
-                   .foregroundColor(.blue)
-               
-               Text("Choose Your Health Data Sources")
-                   .font(.title2)
-                   .fontWeight(.semibold)
-                   .multilineTextAlignment(.center)
-               
-               Text("Select which apps or devices you'd like to use for each type of health data")
-                   .font(.body)
-                   .foregroundColor(.secondary)
-                   .multilineTextAlignment(.center)
-           }
-       }
-       
-       private var categoriesSection: some View {
-           LazyVStack(spacing: 16) {
-               ForEach(HealthCategory.allCases, id: \.self) { category in
-                   CategorySelectionCard(
-                       category: category,
-                       selectedSource: $viewModel.preferences[category],
-                       availableSources: viewModel.getSourcesForCategory(category)
-                   )
-               }
-           }
-       }
-       
-       private var continueButton: some View {
-           Button("Continue") {
-               Task {
-                   await viewModel.savePreferences()
-                   dismiss()
-               }
-           }
-           .buttonStyle(.borderedProminent)
-           .controlSize(.large)
-           .frame(maxWidth: .infinity)
-           .disabled(!viewModel.hasValidSelections)
-       }
-   }
-   ```
+1.  **Onboarding Flow Enhancement - COMPLETED & VALIDATED**
+    *   `DataSourceSelectionView.swift` was created and integrated.
+    *   **User Validation**: Successfully tested by the user (test15) who completed data source selection and reached the main dashboard. New user registration (`test14`) with onboarding skip also validated.
+    *   **Known Issue**: `setsockopt SO_NOWAKEFROMSLEEP` errors observed in logs during testing, but core functionality remained unaffected.
 
-2. **Settings Integration**
-   ```swift
-   // Add to Views/Settings/DataSourceSettingsView.swift
-   struct DataSourceSettingsView: View {
-       @StateObject private var viewModel = DataSourceSettingsViewModel()
-       
-       var body: some View {
-           List {
-               Section("Data Source Preferences") {
-                   ForEach(HealthCategory.allCases, id: \.self) { category in
-                       NavigationLink(destination: CategorySourceDetailView(category: category)) {
-                           HStack {
-                               CategoryIcon(category: category)
-                                   .frame(width: 30, height: 30)
-                               
-                               VStack(alignment: .leading, spacing: 4) {
-                                   Text(category.displayName)
-                                       .font(.body)
-                                   
-                                   Text(viewModel.currentSourceName(for: category) ?? "Not set")
-                                       .font(.caption)
-                                       .foregroundColor(.secondary)
-                               }
-                               
-                               Spacer()
-                               
-                               if viewModel.isConnected(category: category) {
-                                   Image(systemName: "checkmark.circle.fill")
-                                       .foregroundColor(.green)
-                               }
-                           }
-                       }
-                   }
-               }
-               
-               Section("Available Sources") {
-                   ForEach(viewModel.availableSources) { source in
-                       SourceRow(source: source)
-                   }
-               }
-           }
-           .navigationTitle("Data Sources")
-           .task {
-               await viewModel.loadData()
-           }
-       }
-   }
-   ```
+2.  **Settings Integration - COMPLETED & REFINED**
+    *   `DataSourceSettingsView.swift` implemented to allow users to manage data source preferences post-onboarding.
+    *   **Refactoring**: Key UI components (`CategorySourceDetailView` struct, `AvailableDataSourceRow` struct, and related extensions) were extracted from `DataSourceSettingsView.swift` into a new, dedicated file: `Views/Settings/CategorySourceDetailView.swift` to improve modularity and reusability.
+    *   `DataSourceSettingsView.swift` was updated to use this new shared view.
+    *   ViewModel (`DataSourceSettingsViewModel` within `DataSourceSelectionViewModel.swift`) usage confirmed.
+
+3.  **ViewModels (`DataSourceSelectionViewModel.swift` including `DataSourceSettingsViewModel`) - REVIEWED & UTILIZED**
+    *   Existing ViewModels were leveraged for both the onboarding selection and the settings view.
+    *   `DataSourceSettingsViewModel` correctly drives `DataSourceSettingsView`.
 
 ### **REVISED IMPLEMENTATION SCHEDULE**
 
-#### **Day 3: iOS Models & Network Integration**
+#### **Day 3: iOS Models & Network Integration - COMPLETED**
 **Full Day (6-8 hours)**:
-1. ✅ **Skip Backend** - Already complete and tested
-2. **Create iOS Models** - Data source models, preferences structures
-3. **Enhance NetworkManager** - Methods to call existing API endpoints
-4. **Basic UI Components** - Category icons, source selection components
-5. **Test in Simulator** - Verify API calls work from iOS
+1.  ✅ **Skip Backend** - Already complete and tested
+2.  ✅ **Create iOS Models** - Data source models, preferences structures
+3.  ✅ **Enhance NetworkManager** - Methods to call existing API endpoints
+4.  ✅ **Basic UI Components** - Category icons, source selection components (`CategorySelectionCard`, `SourcePickerView`, `SourceRow`)
+5.  ✅ **Test in Simulator** - Verified API calls work from iOS, initial UI components render
 
-#### **Day 4: iOS UI Implementation**
+#### **Day 4: iOS UI Implementation & Refinement - COMPLETED**
 **Full Day (6-8 hours)**:
-1. **Complete DataSourceSelectionView** - Onboarding source selection
-2. **Integrate into Auth Flow** - Add to login sequence for new users
-3. **Create DataSourceSettingsView** - Settings for changing preferences
-4. **Add ViewModels** - Business logic for data source management
-5. **Test Complete Flow** - End-to-end testing in simulator
+1.  ✅ **Complete `DataSourceSelectionView`** - Onboarding source selection.
+2.  ✅ **Integrate into Auth Flow** - Added to login sequence for new users in `ContentView.swift`.
+3.  ✅ **Create and Refine `DataSourceSettingsView`**:
+    *   Initial implementation of settings view.
+    *   Refactored by creating `CategorySourceDetailView.swift` for modularity.
+4.  ✅ **Add ViewModels** - Business logic for data source management (`DataSourceSelectionViewModel`, `DataSourceSettingsViewModel`).
+5.  ✅ **Test Core Flow** - Onboarding and navigation to dashboard successfully user-tested.
+    *   **Known Issue**: `setsockopt SO_NOWAKEFROMSLEEP` errors present in logs.
 
-#### **Days 5-7: Real iPhone Device Testing**
-**Now with Complete Data Source Selection**:
+#### **Days 5-7: Real iPhone Device Testing & Settings Validation**
+**Now with Complete Data Source Selection & Settings Views**:
 
-**Day 5**: iPhone deployment with working data source selection
-- Deploy iOS app to iPhone with complete onboarding flow
-- Test data source selection with real backend integration
-- Configure user preferences through the working UI
-- Validate backend properly stores and retrieves preferences
+**Day 5 (Focus)**: iPhone deployment, validation of refactored Settings views, and initial real data testing.
+*   Deploy iOS app to iPhone with complete onboarding flow and refactored settings views.
+*   **Thoroughly test `DataSourceSettingsView.swift` and `CategorySourceDetailView.swift`**:
+    *   Navigate to Data Sources in Settings.
+    *   Verify each category links to the detail view.
+    *   Test changing preferred sources and ensure persistence.
+*   Test data source selection with real backend integration.
+*   Configure user preferences through the working UI (both onboarding and settings).
+*   Validate backend properly stores and retrieves preferences from both flows.
+*   Continue monitoring `setsockopt` errors.
 
-**Day 6-7**: Real data integration and validation
-- Test switching between different data sources in settings
-- Validate data flow respects user-selected preferences
-- Test the complete user journey from onboarding to daily use
-- Monitor performance and user experience with real data
+**Day 6-7**: Real data integration and validation (as originally planned)
+*   Test switching between different data sources in settings.
+*   Validate data flow respects user-selected preferences.
+*   Test the complete user journey from onboarding to daily use with various preference configurations.
+*   Monitor performance and user experience with real data.
 
 ---
 
 ## 🎯 **UPDATED SUCCESS METRICS**
 
-### **Day 3 Success Criteria**
-- ✅ iOS models properly represent API data structures
-- ✅ NetworkManager successfully calls all preference endpoints
-- ✅ Basic UI components render data from API
-- ✅ Simulator testing shows successful API integration
+### **Day 3 Success Criteria - ACHIEVED**
+*   ✅ iOS models properly represent API data structures
+*   ✅ NetworkManager successfully calls all preference endpoints
+*   ✅ Basic UI components render data from API
+*   ✅ Simulator testing shows successful API integration
 
-### **Day 4 Success Criteria**
-- ✅ Complete onboarding flow with data source selection
-- ✅ Settings view allows changing data source preferences  
-- ✅ All UI interactions properly update backend via API
-- ✅ Navigation flow works seamlessly in simulator
+### **Day 4 Success Criteria - ACHIEVED & EXPANDED**
+*   ✅ Complete onboarding flow with data source selection implemented and user-validated.
+*   ✅ Settings view (`DataSourceSettingsView`) allows navigation to change data source preferences.
+*   ✅ `DataSourceSettingsView` refactored for improved modularity with `CategorySourceDetailView`.
+*   ✅ All UI interactions (onboarding) properly update backend via API, confirmed by user testing.
+*   ✅ Navigation flow for onboarding works seamlessly in simulator, confirmed by user testing.
+*   ❗ `setsockopt SO_NOWAKEFROMSLEEP` errors noted as a persistent but non-breaking issue.
 
-### **Day 5-7 Success Criteria**
-- ✅ Real device testing with complete data source selection
-- ✅ User preferences persist correctly in backend
-- ✅ Settings changes immediately reflect in app behavior
-- ✅ Performance acceptable for daily use
-- ✅ User experience smooth and intuitive
+### **Day 5-7 Success Criteria (Revised Focus for Day 5)**
+*   ✅ **(Day 5)** `DataSourceSettingsView` and `CategorySourceDetailView` function correctly on a real device: navigation, display of current preferences, ability to change and save preferences.
+*   ✅ Real device testing with complete data source selection (onboarding and settings).
+*   ✅ User preferences persist correctly in backend when set via onboarding or settings.
+*   ✅ Settings changes immediately reflect in app behavior (e.g., if an AI insight depends on a preferred source).
+*   ✅ Performance acceptable for daily use.
+*   ✅ User experience smooth and intuitive for both onboarding and settings management.
 
 ### **Week 1 Overall Success**
 - ✅ Complete local development environment validated

@@ -76,20 +76,32 @@ backend/
 
 ### Mobile App Architecture (iOS)
 ```
-iOS/
+iOS/ (HealthDataHub/HealthDataHub/)
 ├── Views/
 │   ├── Dashboard/
-│   ├── DataSources/
+│   ├── DataSources/ # This might be a legacy name or could be where shared DS components live
+│   ├── Authentication/
+│   │   ├── LoginView.swift
+│   │   ├── DataSourceSelectionView.swift       # ✅ Onboarding: Main view for data source selection
+│   │   └── CategorySelectionCard.swift         # ✅ Onboarding: Card for selecting source for a category (includes SourcePickerView, SourceRow)
 │   ├── Settings/
-│   └── Onboarding/
-├── Services/
-│   ├── HealthKit/
-│   ├── API/
-│   └── Sync/
+│   │   ├── DataSourceSettingsView.swift      # ✅ Settings: Main view for managing data sources
+│   │   └── CategorySourceDetailView.swift    # ✅ Settings: Reusable view for a single category's source preference
+│   ├── Achievements/
+│   ├── Goals/
+│   ├── Health/
+│   └── Onboarding/ # This might be general onboarding, distinct from DataSourceSelection
+├── ViewModels/
+│   └── DataSourceSelectionViewModel.swift # ✅ Manages state for both onboarding and settings data source views (includes DataSourceSettingsViewModel)
+├── Managers/
+│   ├── HealthKitManager.swift
+│   ├── NetworkManager.swift             # ✅ Enhanced for data source preferences API
+│   └── BackgroundSyncManager.swift
 ├── Models/
 │   ├── HealthData/
 │   ├── User/
-│   └── Preferences/
+│   ├── Preferences/
+│   └── DataSourceModels.swift           # ✅ Models for data source preferences
 └── Utils/
 ```
 
@@ -118,9 +130,10 @@ iOS/
 ### Frontend Patterns
 1. **Component Composition**
    - Atomic design principles
-   - Data source agnostic components
    - Reusable visualization components
    - Source attribution display
+   - **View Refactoring for Modularity**: Complex views like `DataSourceSettingsView` were broken down by extracting dedicated sub-views (`CategorySourceDetailView`) to manage specific pieces of functionality, improving readability and maintainability. Each can be responsible for a more focused part of the UI and state.
+   - Data source agnostic components where possible
 
 2. **State Management**
    - React Query for multi-source server state
