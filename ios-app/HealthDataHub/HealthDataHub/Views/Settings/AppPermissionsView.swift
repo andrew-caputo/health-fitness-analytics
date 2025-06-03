@@ -2,7 +2,8 @@ import SwiftUI
 import HealthKit
 
 struct AppPermissionsView: View {
-    @EnvironmentObject var healthKitManager: HealthKitManager
+    @StateObject private var viewModel = AppPermissionsViewModel()
+    @EnvironmentObject var healthDataManager: HealthDataManager
     @Environment(\.dismiss) private var dismiss
     @State private var permissionGroups: [PermissionGroup] = []
     @State private var isLoading = true
@@ -37,7 +38,7 @@ struct AppPermissionsView: View {
             }
             .alert("Open Health App", isPresented: $showingHealthApp) {
                 Button("Open") {
-                    healthKitManager.openHealthApp()
+                    healthDataManager.openHealthApp()
                     dismiss()
                 }
                 Button("Cancel", role: .cancel) { }
@@ -141,7 +142,7 @@ struct AppPermissionsView: View {
             // Actions Section
             Section {
                 Button(action: {
-                    healthKitManager.requestHealthKitPermissions()
+                    healthDataManager.requestHealthKitPermissions()
                 }) {
                     HStack {
                         Image(systemName: "plus.circle.fill")
@@ -208,27 +209,27 @@ struct AppPermissionsView: View {
                     HealthPermission(
                         name: "Steps",
                         type: HKQuantityType.quantityType(forIdentifier: .stepCount)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .stepCount)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .stepCount)!)
                     ),
                     HealthPermission(
                         name: "Distance Walking/Running",
                         type: HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!)
                     ),
                     HealthPermission(
                         name: "Active Energy",
                         type: HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!)
                     ),
                     HealthPermission(
                         name: "Exercise Time",
                         type: HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)!)
                     ),
                     HealthPermission(
                         name: "Workouts",
                         type: HKWorkoutType.workoutType(),
-                        status: healthKitManager.authorizationStatus(for: HKWorkoutType.workoutType())
+                        status: healthDataManager.authorizationStatus(for: HKWorkoutType.workoutType())
                     )
                 ]
             ),
@@ -242,22 +243,22 @@ struct AppPermissionsView: View {
                     HealthPermission(
                         name: "Weight",
                         type: HKQuantityType.quantityType(forIdentifier: .bodyMass)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .bodyMass)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .bodyMass)!)
                     ),
                     HealthPermission(
                         name: "Height",
                         type: HKQuantityType.quantityType(forIdentifier: .height)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .height)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .height)!)
                     ),
                     HealthPermission(
                         name: "Body Mass Index",
                         type: HKQuantityType.quantityType(forIdentifier: .bodyMassIndex)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .bodyMassIndex)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .bodyMassIndex)!)
                     ),
                     HealthPermission(
                         name: "Body Fat Percentage",
                         type: HKQuantityType.quantityType(forIdentifier: .bodyFatPercentage)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .bodyFatPercentage)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .bodyFatPercentage)!)
                     )
                 ]
             ),
@@ -271,17 +272,17 @@ struct AppPermissionsView: View {
                     HealthPermission(
                         name: "Heart Rate",
                         type: HKQuantityType.quantityType(forIdentifier: .heartRate)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .heartRate)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .heartRate)!)
                     ),
                     HealthPermission(
                         name: "Heart Rate Variability",
                         type: HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!)
                     ),
                     HealthPermission(
                         name: "Resting Heart Rate",
                         type: HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!)
                     )
                 ]
             ),
@@ -295,27 +296,27 @@ struct AppPermissionsView: View {
                     HealthPermission(
                         name: "Dietary Energy",
                         type: HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed)!)
                     ),
                     HealthPermission(
                         name: "Carbohydrates",
                         type: HKQuantityType.quantityType(forIdentifier: .dietaryCarbohydrates)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .dietaryCarbohydrates)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .dietaryCarbohydrates)!)
                     ),
                     HealthPermission(
                         name: "Protein",
                         type: HKQuantityType.quantityType(forIdentifier: .dietaryProtein)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .dietaryProtein)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .dietaryProtein)!)
                     ),
                     HealthPermission(
                         name: "Total Fat",
                         type: HKQuantityType.quantityType(forIdentifier: .dietaryFatTotal)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .dietaryFatTotal)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .dietaryFatTotal)!)
                     ),
                     HealthPermission(
                         name: "Water",
                         type: HKQuantityType.quantityType(forIdentifier: .dietaryWater)!,
-                        status: healthKitManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .dietaryWater)!)
+                        status: healthDataManager.authorizationStatus(for: HKQuantityType.quantityType(forIdentifier: .dietaryWater)!)
                     )
                 ]
             ),
@@ -329,7 +330,7 @@ struct AppPermissionsView: View {
                     HealthPermission(
                         name: "Sleep Analysis",
                         type: HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)!,
-                        status: healthKitManager.authorizationStatus(for: HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)!)
+                        status: healthDataManager.authorizationStatus(for: HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)!)
                     )
                 ]
             ),
@@ -343,7 +344,7 @@ struct AppPermissionsView: View {
                     HealthPermission(
                         name: "Mindful Session",
                         type: HKCategoryType.categoryType(forIdentifier: .mindfulSession)!,
-                        status: healthKitManager.authorizationStatus(for: HKCategoryType.categoryType(forIdentifier: .mindfulSession)!)
+                        status: healthDataManager.authorizationStatus(for: HKCategoryType.categoryType(forIdentifier: .mindfulSession)!)
                     )
                 ]
             )
@@ -467,9 +468,9 @@ struct HealthPermission: Identifiable {
     }
 }
 
-// MARK: - HealthKitManager Extension
+// MARK: - HealthDataManager Extension
 
-extension HealthKitManager {
+extension HealthDataManager {
     func authorizationStatus(for type: HKObjectType) -> HKAuthorizationStatus {
         return healthStore.authorizationStatus(for: type)
     }
@@ -480,6 +481,6 @@ extension HealthKitManager {
 struct AppPermissionsView_Previews: PreviewProvider {
     static var previews: some View {
         AppPermissionsView()
-            .environmentObject(HealthKitManager())
+            .environmentObject(HealthDataManager())
     }
 } 

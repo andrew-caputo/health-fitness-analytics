@@ -177,6 +177,7 @@ class UserDataSourcePreferencesBase(BaseModel):
     sleep_source: Optional[str] = None
     nutrition_source: Optional[str] = None
     body_composition_source: Optional[str] = None
+    heart_health_source: Optional[str] = None
     priority_rules: Optional[Dict[str, Any]] = None
     conflict_resolution: Optional[Dict[str, Any]] = None
 
@@ -248,6 +249,7 @@ class DataSourceCapabilitiesBase(BaseModel):
     supports_sleep: bool = False
     supports_nutrition: bool = False
     supports_body_composition: bool = False
+    supports_heart_health: bool = False
     integration_type: str  # oauth2, file_upload
     oauth_config: Optional[Dict[str, Any]] = None
     api_endpoints: Optional[Dict[str, Any]] = None
@@ -277,6 +279,7 @@ class DataSourceStatus(BaseModel):
     supports_sleep: bool
     supports_nutrition: bool
     supports_body_composition: bool
+    supports_heart_health: bool
 
 class UserPreferencesResponse(BaseModel):
     preferences: Optional[UserDataSourcePreferences] = None

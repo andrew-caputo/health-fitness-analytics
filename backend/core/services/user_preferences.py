@@ -53,6 +53,7 @@ class UserPreferencesService:
             sleep_source=preferences_data.sleep_source,
             nutrition_source=preferences_data.nutrition_source,
             body_composition_source=preferences_data.body_composition_source,
+            heart_health_source=preferences_data.heart_health_source,
             priority_rules=preferences_data.priority_rules,
             conflict_resolution=preferences_data.conflict_resolution,
             created_at=datetime.now(UTC),
@@ -132,7 +133,8 @@ class UserPreferencesService:
             (preferences_data.activity_source, 'supports_activity'),
             (preferences_data.sleep_source, 'supports_sleep'),
             (preferences_data.nutrition_source, 'supports_nutrition'),
-            (preferences_data.body_composition_source, 'supports_body_composition')
+            (preferences_data.body_composition_source, 'supports_body_composition'),
+            (preferences_data.heart_health_source, 'supports_heart_health')
         ]
         
         for source_name, capability_field in sources_to_validate:
@@ -176,7 +178,8 @@ class UserPreferencesService:
                     supports_activity=cap.supports_activity,
                     supports_sleep=cap.supports_sleep,
                     supports_nutrition=cap.supports_nutrition,
-                    supports_body_composition=cap.supports_body_composition
+                    supports_body_composition=cap.supports_body_composition,
+                    supports_heart_health=cap.supports_heart_health
                 )
                 status_list.append(status)
         
@@ -192,13 +195,19 @@ class UserPreferencesService:
             'activity': preferences.activity_source,
             'sleep': preferences.sleep_source,
             'nutrition': preferences.nutrition_source,
-            'body_composition': preferences.body_composition_source
+            'body_composition': preferences.body_composition_source,
+            'heart_health': preferences.heart_health_source
         }
         
         return category_mapping.get(category)
     
     def is_source_connected(self, user_id: UUID, source_name: str) -> bool:
         """Check if a specific data source is connected for a user"""
+        # Apple Health (HealthKit) is inherently connected if user has granted HealthKit permissions
+        # We don't require explicit OAuth connection for device-local data sources
+        if source_name == "apple_health":
+            return True
+        
         connection = self.db.query(DataSourceConnection).filter(
             and_(
                 DataSourceConnection.user_id == user_id,

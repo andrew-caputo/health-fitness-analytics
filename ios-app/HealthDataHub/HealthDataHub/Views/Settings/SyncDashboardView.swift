@@ -2,7 +2,8 @@ import SwiftUI
 import HealthKit
 
 struct SyncDashboardView: View {
-    @EnvironmentObject var healthKitManager: HealthKitManager
+    @StateObject private var viewModel = SyncDashboardViewModel()
+    @EnvironmentObject var healthDataManager: HealthDataManager
     @EnvironmentObject var backgroundSyncManager: BackgroundSyncManager
     @EnvironmentObject var networkManager: NetworkManager
     @State private var syncStatus: DashboardSyncStatus = DashboardSyncStatus()
@@ -744,7 +745,7 @@ enum ConflictSeverity: String, CaseIterable {
 struct SyncDashboardView_Previews: PreviewProvider {
     static var previews: some View {
         SyncDashboardView()
-            .environmentObject(HealthKitManager())
+            .environmentObject(HealthDataManager())
             .environmentObject(BackgroundSyncManager())
             .environmentObject(NetworkManager.shared)
     }

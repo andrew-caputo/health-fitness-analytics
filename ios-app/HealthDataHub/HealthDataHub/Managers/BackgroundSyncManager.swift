@@ -6,12 +6,19 @@ import Combine
 @MainActor
 class BackgroundSyncManager: ObservableObject {
     private let backgroundTaskIdentifier = "com.healthdatahub.app.healthsync"
-    private let healthKitManager: HealthKitManager?
+    private let healthDataManager: HealthDataManager?
     
     @Published var lastBackgroundSync: Date?
     @Published var backgroundSyncStatus: BackgroundSyncStatus = .idle
     @Published var syncProgress: Double = 0.0
     @Published var errorMessage: String?
+    
+    enum SyncStatus: Equatable {
+        case idle
+        case syncing
+        case success
+        case error(String)
+    }
     
     enum BackgroundSyncStatus: Equatable {
         case idle
@@ -33,8 +40,8 @@ class BackgroundSyncManager: ObservableObject {
     
     // MARK: - Initialization
     
-    init(healthKitManager: HealthKitManager? = nil) {
-        self.healthKitManager = healthKitManager
+    init(healthDataManager: HealthDataManager? = nil) {
+        self.healthDataManager = healthDataManager
     }
     
     // MARK: - Background Task Registration
@@ -145,35 +152,35 @@ class BackgroundSyncManager: ObservableObject {
             
             // Read step count
             group.enter()
-            healthKitManager?.readStepCount { samples in
+            healthDataManager?.readStepCount { samples in
                 allSamples.append(contentsOf: samples)
                 group.leave()
             }
             
             // Read heart rate
             group.enter()
-            healthKitManager?.readHeartRate { samples in
+            healthDataManager?.readHeartRate { samples in
                 allSamples.append(contentsOf: samples)
                 group.leave()
             }
             
             // Read workouts
             group.enter()
-            healthKitManager?.readWorkouts { workouts in
+            healthDataManager?.readWorkouts { workouts in
                 allSamples.append(contentsOf: workouts)
                 group.leave()
             }
             
             // Read nutrition data
             group.enter()
-            healthKitManager?.readNutritionData { samples in
+            healthDataManager?.readNutritionData { samples in
                 allSamples.append(contentsOf: samples)
                 group.leave()
             }
             
             // Read sleep data
             group.enter()
-            healthKitManager?.readSleepData { samples in
+            healthDataManager?.readSleepData { samples in
                 allSamples.append(contentsOf: samples)
                 group.leave()
             }

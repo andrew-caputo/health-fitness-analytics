@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DataSourcePriorityView: View {
-    @EnvironmentObject var healthKitManager: HealthKitManager
+    @EnvironmentObject var healthDataManager: HealthDataManager
     @EnvironmentObject var networkManager: NetworkManager
     @Environment(\.dismiss) private var dismiss
     
@@ -495,7 +495,7 @@ struct DataSourceRow: View {
 struct DataSourcePriorityView_Previews: PreviewProvider {
     static var previews: some View {
         DataSourcePriorityView()
-            .environmentObject(HealthKitManager())
+            .environmentObject(HealthDataManager())
             .environmentObject(NetworkManager.shared)
     }
 } 

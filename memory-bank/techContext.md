@@ -191,3 +191,16 @@ CREATE TABLE user_goals (
 - All backend internal imports now use absolute paths (e.g., from backend.core.models import ...)
 - Relative imports have been removed to avoid module resolution issues in Docker/Poetry
 - Linter (ruff) is used to enforce code quality; 137 issues found, plan to address critical ones before endpoint testing 
+
+### iOS Application
+- **Framework**: SwiftUI + Combine
+- **Architecture**: MVVM with feature-organized structure
+- **Health Integration**: HealthKit framework for device-local health data
+- **Data Management**: 
+  - `HealthDataManager.swift`: Multi-source health data integration (HealthKit + API sources)
+  - `NetworkManager.swift`: Backend communication with data source preferences support
+  - `BackgroundSyncManager.swift`: Automated health data synchronization
+- **Authentication**: JWT token management with Keychain storage
+- **Data Sources**: Complete user preference system for 9 health data sources
+- **Categories Supported**: Activity, Sleep, Nutrition, Body Composition, Heart Health
+- **Connection Logic**: Apple Health treated as inherently connected, OAuth sources require explicit connection 

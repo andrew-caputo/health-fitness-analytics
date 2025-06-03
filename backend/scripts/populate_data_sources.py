@@ -27,6 +27,7 @@ def populate_data_sources():
             "supports_sleep": True,
             "supports_nutrition": False,
             "supports_body_composition": True,
+            "supports_heart_health": True,
             "integration_type": "oauth2",
             "oauth_config": {
                 "client_id_env": "WITHINGS_CLIENT_ID",
@@ -53,6 +54,7 @@ def populate_data_sources():
             "supports_sleep": True,
             "supports_nutrition": True,
             "supports_body_composition": True,
+            "supports_heart_health": True,
             "integration_type": "file_upload",
             "oauth_config": None,
             "api_endpoints": {
@@ -78,6 +80,7 @@ def populate_data_sources():
             "supports_sleep": True,
             "supports_nutrition": True,
             "supports_body_composition": True,
+            "supports_heart_health": True,
             "integration_type": "file_upload",
             "oauth_config": None,
             "api_endpoints": {
@@ -102,6 +105,7 @@ def populate_data_sources():
             "supports_sleep": True,
             "supports_nutrition": False,
             "supports_body_composition": False,
+            "supports_heart_health": True,
             "integration_type": "oauth2",
             "oauth_config": {
                 "client_id_env": "OURA_CLIENT_ID",
@@ -128,6 +132,7 @@ def populate_data_sources():
             "supports_sleep": False,
             "supports_nutrition": True,
             "supports_body_composition": False,
+            "supports_heart_health": True,
             "integration_type": "oauth2",
             "oauth_config": {
                 "client_id_env": "MYFITNESSPAL_CLIENT_ID",
@@ -154,6 +159,7 @@ def populate_data_sources():
             "supports_sleep": True,
             "supports_nutrition": False,
             "supports_body_composition": True,
+            "supports_heart_health": True,
             "integration_type": "oauth2",
             "oauth_config": {
                 "client_id_env": "FITBIT_CLIENT_ID",
@@ -180,6 +186,7 @@ def populate_data_sources():
             "supports_sleep": False,
             "supports_nutrition": False,
             "supports_body_composition": False,
+            "supports_heart_health": True,
             "integration_type": "oauth2",
             "oauth_config": {
                 "client_id_env": "STRAVA_CLIENT_ID",
@@ -206,6 +213,7 @@ def populate_data_sources():
             "supports_sleep": True,
             "supports_nutrition": False,
             "supports_body_composition": True,
+            "supports_heart_health": True,
             "integration_type": "oauth2",
             "oauth_config": {
                 "client_id_env": "WHOOP_CLIENT_ID",
@@ -233,6 +241,7 @@ def populate_data_sources():
             "supports_sleep": False,
             "supports_nutrition": True,
             "supports_body_composition": True,
+            "supports_heart_health": True,
             "integration_type": "oauth2",
             "oauth_config": {
                 "client_id_env": "CRONOMETER_CLIENT_ID",
@@ -298,7 +307,7 @@ def populate_data_sources():
         print(f"Active data sources: {active_sources}")
         
         # Print capabilities summary
-        categories = ["activity", "sleep", "nutrition", "body_composition"]
+        categories = ["activity", "sleep", "nutrition", "body_composition", "heart_health"]
         for category in categories:
             field_name = f"supports_{category}"
             count = db.query(DataSourceCapabilities).filter(

@@ -92,7 +92,7 @@ class DataSourceSelectionViewModel: ObservableObject {
         preferences[.sleep] = serverPreferences.sleep_source
         preferences[.nutrition] = serverPreferences.nutrition_source
         preferences[.bodyComposition] = serverPreferences.body_composition_source
-        preferences[.heart] = serverPreferences.activity_source // Heart data comes from activity source
+        preferences[.heartHealth] = serverPreferences.heart_health_source // Heart data comes from heart_health_source
         preferences[.workouts] = serverPreferences.activity_source // Workouts come from activity source
     }
     
@@ -109,7 +109,7 @@ class DataSourceSelectionViewModel: ObservableObject {
         // If selecting activity source, also update heart and workouts with visual feedback
         if category == .activity {
             print("🔗 Auto-linking Heart and Workouts to Activity source: \(sourceName)")
-            preferences[.heart] = sourceName
+            preferences[.heartHealth] = sourceName
             preferences[.workouts] = sourceName
         }
         
@@ -151,7 +151,8 @@ class DataSourceSelectionViewModel: ObservableObject {
             activity_source: preferences[.activity] ?? nil,
             sleep_source: preferences[.sleep] ?? nil,
             nutrition_source: preferences[.nutrition] ?? nil,
-            body_composition_source: preferences[.bodyComposition] ?? nil
+            body_composition_source: preferences[.bodyComposition] ?? nil,
+            heart_health_source: preferences[.heartHealth] ?? nil
         )
         
         do {

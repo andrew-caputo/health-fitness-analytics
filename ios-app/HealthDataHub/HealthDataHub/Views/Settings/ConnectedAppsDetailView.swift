@@ -1,68 +1,69 @@
 import SwiftUI
 
 struct ConnectedAppsDetailView: View {
-    @StateObject private var healthKitManager = HealthKitManager()
+    @StateObject private var healthDataManager = HealthDataManager()
     
     var body: some View {
-        List {
-            Section("HealthKit Integration") {
-                HStack {
-                    Image(systemName: "heart.fill")
-                        .foregroundColor(.red)
+        NavigationView {
+            VStack(spacing: 20) {
+                // Header
+                VStack(spacing: 8) {
+                    Image(systemName: "app.connected.to.app.below.fill")
+                        .font(.largeTitle)
+                        .foregroundColor(.blue)
                     
-                    VStack(alignment: .leading) {
-                        Text("Apple HealthKit")
-                            .font(.headline)
+                    Text("Connected Apps")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    HStack {
+                        Text(healthDataManager.isAuthorized ? "Connected" : "Not Connected")
+                            .font(.subheadline)
+                            .foregroundColor(healthDataManager.isAuthorized ? .green : .orange)
                         
-                        Text(healthKitManager.isAuthorized ? "Connected" : "Not Connected")
-                            .font(.caption)
-                            .foregroundColor(healthKitManager.isAuthorized ? .green : .orange)
+                        Image(systemName: healthDataManager.isAuthorized ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                            .foregroundColor(healthDataManager.isAuthorized ? .green : .orange)
                     }
                     
-                    Spacer()
-                    
-                    if !healthKitManager.isAuthorized {
-                        Button("Connect") {
-                            healthKitManager.requestHealthKitPermissions()
+                    if !healthDataManager.isAuthorized {
+                        Button("Enable HealthKit") {
+                            healthDataManager.requestHealthKitPermissions()
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.borderedProminent)
                     }
                 }
-            }
-            
-            Section("Connected Health Apps") {
-                if healthKitManager.connectedApps.isEmpty {
-                    Text("No connected apps found")
-                        .foregroundColor(.secondary)
-                } else {
-                    ForEach(healthKitManager.connectedApps, id: \.self) { app in
-                        HStack {
-                            Image(systemName: "app.fill")
-                                .foregroundColor(.blue)
-                            
-                            Text(app)
-                                .font(.headline)
-                            
-                            Spacer()
-                            
-                            Text("Connected")
-                                .font(.caption)
-                                .foregroundColor(.green)
+                .padding()
+                
+                // Connected Apps List
+                List {
+                    if healthDataManager.connectedApps.isEmpty {
+                        Text("No connected apps found")
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(healthDataManager.connectedApps, id: \.self) { app in
+                            HStack {
+                                Image(systemName: "app.fill")
+                                    .foregroundColor(.blue)
+                                
+                                Text(app)
+                                
+                                Spacer()
+                                
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                            }
+                            .padding(.vertical, 2)
                         }
                     }
                 }
             }
-            
-            Section {
-                Button("Refresh Connected Apps") {
-                    healthKitManager.updateConnectedApps()
-                }
+            .navigationTitle("Connected Apps")
+            .onAppear {
+                healthDataManager.updateConnectedApps()
             }
-        }
-        .navigationTitle("Connected Apps")
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            healthKitManager.updateConnectedApps()
+            .refreshable {
+                healthDataManager.updateConnectedApps()
+            }
         }
     }
 }

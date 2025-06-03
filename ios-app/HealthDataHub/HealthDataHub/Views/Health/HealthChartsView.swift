@@ -3,8 +3,9 @@ import Charts
 import HealthKit
 
 struct HealthChartsView: View {
-    @EnvironmentObject var healthKitManager: HealthKitManager
+    @StateObject private var viewModel = HealthChartsViewModel()
     @EnvironmentObject var networkManager: NetworkManager
+    @EnvironmentObject var healthDataManager: HealthDataManager
     @State private var selectedTimeRange: TimeRange = .week
     @State private var selectedMetric: HealthMetric = .steps
     @State private var chartData: [ChartDataPoint] = []
@@ -537,7 +538,7 @@ struct ChartDataPoint: Identifiable {
 struct HealthChartsView_Previews: PreviewProvider {
     static var previews: some View {
         HealthChartsView()
-            .environmentObject(HealthKitManager())
+            .environmentObject(HealthDataManager())
             .environmentObject(NetworkManager.shared)
     }
 } 

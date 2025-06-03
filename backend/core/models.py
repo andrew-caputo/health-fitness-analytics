@@ -149,6 +149,7 @@ class UserDataSourcePreferences(Base):
     sleep_source = Column(String(50), nullable=True)  # User's preferred sleep data source
     nutrition_source = Column(String(50), nullable=True)  # User's preferred nutrition data source
     body_composition_source = Column(String(50), nullable=True)  # User's preferred body composition source
+    heart_health_source = Column(String(50), nullable=True)  # User's preferred heart health data source
     priority_rules = Column(JSON, nullable=True)  # Rules for handling multiple sources
     conflict_resolution = Column(JSON, nullable=True)  # How to resolve conflicts between sources
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -208,6 +209,7 @@ class DataSourceCapabilities(Base):
     supports_sleep = Column(Boolean, nullable=False, default=False)
     supports_nutrition = Column(Boolean, nullable=False, default=False)
     supports_body_composition = Column(Boolean, nullable=False, default=False)
+    supports_heart_health = Column(Boolean, nullable=False, default=False)
     integration_type = Column(String(20), nullable=False)  # oauth2, file_upload
     oauth_config = Column(JSON, nullable=True)  # OAuth2 configuration
     api_endpoints = Column(JSON, nullable=True)  # API endpoint configuration

@@ -94,9 +94,8 @@ iOS/ (HealthDataHub/HealthDataHub/)
 ├── ViewModels/
 │   └── DataSourceSelectionViewModel.swift # ✅ Manages state for both onboarding and settings data source views (includes DataSourceSettingsViewModel)
 ├── Managers/
-│   ├── HealthKitManager.swift
-│   ├── NetworkManager.swift             # ✅ Enhanced for data source preferences API
-│   └── BackgroundSyncManager.swift
+│   ├── HealthDataManager.swift     # ✅ Complete multi-source health data integration (HealthKit + API sources)
+│   └── NetworkManager.swift       # ✅ JWT auth & API communication with data source preferences support
 ├── Models/
 │   ├── HealthData/
 │   ├── User/
@@ -326,3 +325,53 @@ iOS/ (HealthDataHub/HealthDataHub/)
 - Data transformation layers for unified schema
 - Error recovery mechanisms with intelligent retry
 - Rate limiting compliance per source requirements 
+
+## Multi-Source Data Architecture
+
+### Data Source Selection System
+The platform implements a comprehensive multi-source health data selection system:
+
+#### Backend Architecture
+```python
+# Data Source Connection Logic (user_preferences.py)
+def is_source_connected(self, user_id: UUID, source_name: str) -> bool:
+    # Apple Health (HealthKit) is inherently connected when HealthKit permissions granted
+    if source_name == "apple_health":
+        return True
+    
+    # Other sources require explicit OAuth connection
+    connection = self.db.query(DataSourceConnection).filter(
+        and_(
+            DataSourceConnection.user_id == user_id,
+            DataSourceConnection.source_type == source_name,
+            DataSourceConnection.status == "connected"
+        )
+    ).first()
+    
+    return connection is not None
+```
+
+#### iOS Network Communication
+```swift
+// NetworkManager.swift - Data Source Preferences API
+func setPreferredSourceForCategory(category: HealthCategory, sourceName: String) async throws {
+    // Uses query parameters (not form data) to match backend API expectations
+    let _: EmptyResponse = try await requestWithoutBody(
+        endpoint: "/api/v1/preferences/category/\(category.rawValue)/set-preferred?source_name=\(sourceName)",
+        method: .POST
+    )
+}
+```
+
+#### Health Categories Supported
+- **Activity**: Steps, workouts, calories (8 sources)
+- **Sleep**: Duration, stages, quality (6 sources)  
+- **Nutrition**: Calories, macros, water (4 sources)
+- **Body Composition**: Weight, BMI, body fat (6 sources)
+- **Heart Health**: Heart rate, HRV, cardiovascular metrics (8 sources)
+
+#### Source Connection States
+- **Apple Health**: Always considered connected (HealthKit integration)
+- **OAuth Sources**: Require explicit connection flow (Withings, Oura, Fitbit, etc.)
+- **File Upload**: CSV and Apple Health export processing
+- **Connection Validation**: Backend enforces connection requirements per source type 

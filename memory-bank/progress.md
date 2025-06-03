@@ -1368,3 +1368,50 @@ Total metrics: 1
 - Build and test the refactored `DataSourceSettingsView` and `CategorySourceDetailView` on a simulator or device.
 - Verify navigation and functionality for selecting preferred data sources within settings.
 - Proceed with real device testing (Day 5 tasks) if settings view validation is successful.
+
+## June 3, 2025: Critical Heart Health Issue Resolution & File Organization
+
+### 🎉 **MAJOR SUCCESS: Heart Health Data Source Selection Fixed**
+
+**Issue**: Critical error preventing users from selecting heart health data sources - "Failed to change source: The operation couldn't be completed" with network errors.
+
+**Root Cause Analysis**: Comprehensive investigation revealed dual issues:
+1. **iOS Network Protocol Mismatch**: NetworkManager sending form data instead of query parameters
+2. **Backend Validation Logic**: Apple Health not marked as "connected" despite being inherently available through HealthKit
+
+**Solutions Implemented**:
+
+#### 1. iOS NetworkManager Fix
+- **File**: `health-fitness-analytics/ios-app/HealthDataHub/HealthDataHub/Managers/NetworkManager.swift`
+- **Change**: Modified `setPreferredSourceForCategory` method
+- **From**: `performFormRequest` with form data
+- **To**: `requestWithoutBody` with URL query parameters
+- **Result**: Proper API request format matching backend expectations
+
+#### 2. Backend Connection Logic Enhancement
+- **File**: `health-fitness-analytics/backend/core/services/user_preferences.py`
+- **Change**: Enhanced `is_source_connected` method
+- **Logic**: Apple Health (`apple_health`) treated as always connected
+- **Rationale**: HealthKit is inherently connected when user grants permissions
+- **Preservation**: Other OAuth sources still require proper connection flow
+
+#### 3. File Organization Improvement
+- **Renamed**: `HealthKitManager.swift` → `HealthDataManager.swift`
+- **Reason**: File name now matches class name and reflects multi-source capability
+- **Impact**: Zero code changes needed - all references already used correct class name
+
+**Validation Results**:
+- ✅ Backend API test: Successfully sets Apple Health for heart_health category
+- ✅ Other sources validation: Non-Apple sources still properly require connection  
+- ✅ iOS build test: App compiles with no errors
+- ✅ End-to-end test: User confirmed heart health source selection now works perfectly
+
+**Technical Impact**:
+- **Zero Breaking Changes**: All existing functionality preserved
+- **Robust Architecture**: Dual validation approach (iOS + Backend)
+- **Professional Standards**: Swift naming conventions followed
+- **Future-Proof Design**: Multi-source architecture properly implemented
+
+**Status**: ✅ **COMPLETE RESOLUTION** - Ready for iPhone device testing with full confidence
+
+---

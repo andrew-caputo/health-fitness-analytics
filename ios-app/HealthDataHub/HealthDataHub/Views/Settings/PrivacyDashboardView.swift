@@ -2,7 +2,8 @@ import SwiftUI
 import HealthKit
 
 struct PrivacyDashboardView: View {
-    @EnvironmentObject var healthKitManager: HealthKitManager
+    @StateObject private var viewModel = PrivacyDashboardViewModel()
+    @EnvironmentObject var healthDataManager: HealthDataManager
     @EnvironmentObject var networkManager: NetworkManager
     @State private var privacySettings: PrivacySettings = PrivacySettings()
     @State private var auditLogs: [PrivacyAuditLog] = []
@@ -646,7 +647,7 @@ struct PrivacyAuditLog: Identifiable {
 struct PrivacyDashboardView_Previews: PreviewProvider {
     static var previews: some View {
         PrivacyDashboardView()
-            .environmentObject(HealthKitManager())
+            .environmentObject(HealthDataManager())
             .environmentObject(NetworkManager.shared)
     }
 } 

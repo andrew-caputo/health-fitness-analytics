@@ -2,7 +2,8 @@ import SwiftUI
 import Charts
 
 struct TrendsAnalysisView: View {
-    @EnvironmentObject var healthKitManager: HealthKitManager
+    @StateObject private var viewModel = TrendsAnalysisViewModel()
+    @EnvironmentObject var healthDataManager: HealthDataManager
     @EnvironmentObject var networkManager: NetworkManager
     @State private var selectedPeriod: TrendPeriod = .month
     @State private var trendData: [TrendDataPoint] = []
@@ -580,7 +581,7 @@ enum TrendDirection: String {
 struct TrendsAnalysisView_Previews: PreviewProvider {
     static var previews: some View {
         TrendsAnalysisView()
-            .environmentObject(HealthKitManager())
+            .environmentObject(HealthDataManager())
             .environmentObject(NetworkManager.shared)
     }
 } 

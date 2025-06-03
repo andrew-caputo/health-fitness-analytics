@@ -260,6 +260,7 @@ struct CategoryIcon: View {
                     supports_sleep: true,
                     supports_nutrition: true,
                     supports_body_composition: true,
+                    supports_heart_health: true,
                     integration_type: "api",
                     is_active: true
                 ),
@@ -270,6 +271,7 @@ struct CategoryIcon: View {
                     supports_sleep: true,
                     supports_nutrition: false,
                     supports_body_composition: true,
+                    supports_heart_health: true,
                     integration_type: "oauth2",
                     is_active: true
                 )

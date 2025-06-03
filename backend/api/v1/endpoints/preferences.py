@@ -96,10 +96,10 @@ async def get_sources_for_category(
     db: Session = Depends(get_db)
 ):
     """Get available and connected sources for a specific category"""
-    if category not in ['activity', 'sleep', 'nutrition', 'body_composition']:
+    if category not in ['activity', 'sleep', 'nutrition', 'body_composition', 'heart_health']:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid category. Must be one of: activity, sleep, nutrition, body_composition"
+            detail="Invalid category. Must be one of: activity, sleep, nutrition, body_composition, heart_health"
         )
     
     service = UserPreferencesService(db)
@@ -142,10 +142,10 @@ async def set_preferred_source_for_category(
     db: Session = Depends(get_db)
 ):
     """Set the preferred data source for a specific category"""
-    if category not in ['activity', 'sleep', 'nutrition', 'body_composition']:
+    if category not in ['activity', 'sleep', 'nutrition', 'body_composition', 'heart_health']:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid category. Must be one of: activity, sleep, nutrition, body_composition"
+            detail="Invalid category. Must be one of: activity, sleep, nutrition, body_composition, heart_health"
         )
     
     service = UserPreferencesService(db)
@@ -182,7 +182,8 @@ async def set_preferred_source_for_category(
             'activity_source': current_preferences.activity_source,
             'sleep_source': current_preferences.sleep_source,
             'nutrition_source': current_preferences.nutrition_source,
-            'body_composition_source': current_preferences.body_composition_source
+            'body_composition_source': current_preferences.body_composition_source,
+            'heart_health_source': current_preferences.heart_health_source
         }
     
     update_data[f'{category}_source'] = source_name

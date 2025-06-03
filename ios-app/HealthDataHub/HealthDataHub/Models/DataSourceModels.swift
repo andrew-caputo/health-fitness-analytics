@@ -7,7 +7,7 @@ enum HealthCategory: String, CaseIterable, Codable {
     case bodyComposition = "body_composition"
     case nutrition = "nutrition"
     case sleep = "sleep"
-    case heart = "heart"
+    case heartHealth = "heart_health"
     case workouts = "workouts"
     
     var displayName: String {
@@ -16,7 +16,7 @@ enum HealthCategory: String, CaseIterable, Codable {
         case .bodyComposition: return "Body Composition"
         case .nutrition: return "Nutrition"
         case .sleep: return "Sleep"
-        case .heart: return "Heart Rate"
+        case .heartHealth: return "Heart Health"
         case .workouts: return "Workouts"
         }
     }
@@ -27,7 +27,7 @@ enum HealthCategory: String, CaseIterable, Codable {
         case .bodyComposition: return "scalemass"
         case .nutrition: return "fork.knife"
         case .sleep: return "bed.double"
-        case .heart: return "heart"
+        case .heartHealth: return "heart"
         case .workouts: return "dumbbell"
         }
     }
@@ -38,7 +38,7 @@ enum HealthCategory: String, CaseIterable, Codable {
         case .bodyComposition: return "Weight, BMI, body fat percentage"
         case .nutrition: return "Calories, macros, water intake"
         case .sleep: return "Sleep duration, sleep stages, sleep quality"
-        case .heart: return "Heart rate, heart rate variability"
+        case .heartHealth: return "Heart rate, heart rate variability"
         case .workouts: return "Exercise sessions and fitness activities"
         }
     }
@@ -53,12 +53,13 @@ struct PreferenceDataSource: Codable, Identifiable, Hashable {
     let supports_sleep: Bool
     let supports_nutrition: Bool
     let supports_body_composition: Bool
+    let supports_heart_health: Bool
     let integration_type: String
     let is_active: Bool
     
     enum CodingKeys: String, CodingKey {
         case source_name, display_name, supports_activity, supports_sleep
-        case supports_nutrition, supports_body_composition, integration_type, is_active
+        case supports_nutrition, supports_body_composition, supports_heart_health, integration_type, is_active
     }
     
     func supports(category: HealthCategory) -> Bool {
@@ -67,7 +68,7 @@ struct PreferenceDataSource: Codable, Identifiable, Hashable {
         case .bodyComposition: return supports_body_composition
         case .nutrition: return supports_nutrition
         case .sleep: return supports_sleep
-        case .heart: return supports_activity // Heart data typically comes with activity data
+        case .heartHealth: return supports_heart_health
         case .workouts: return supports_activity // Workouts are part of activity data
         }
     }
@@ -159,13 +160,15 @@ struct UserDataSourcePreferences: Codable {
     let sleep_source: String?
     let nutrition_source: String?
     let body_composition_source: String?
+    let heart_health_source: String?
     
     func preferredSource(for category: HealthCategory) -> String? {
         switch category {
-        case .activity, .heart, .workouts: return activity_source
+        case .activity, .workouts: return activity_source
         case .bodyComposition: return body_composition_source
         case .nutrition: return nutrition_source
         case .sleep: return sleep_source
+        case .heartHealth: return heart_health_source
         }
     }
     
@@ -195,39 +198,52 @@ extension UserDataSourcePreferences {
             activity_source: nil,
             sleep_source: nil,
             nutrition_source: nil,
-            body_composition_source: nil
+            body_composition_source: nil,
+            heart_health_source: nil
         )
     }
     
     func updated(category: HealthCategory, sourceName: String?) -> UserDataSourcePreferences {
         switch category {
-        case .activity, .heart, .workouts:
+        case .activity, .workouts:
             return UserDataSourcePreferences(
                 activity_source: sourceName,
                 sleep_source: sleep_source,
                 nutrition_source: nutrition_source,
-                body_composition_source: body_composition_source
-            )
-        case .bodyComposition:
-            return UserDataSourcePreferences(
-                activity_source: activity_source,
-                sleep_source: sleep_source,
-                nutrition_source: nutrition_source,
-                body_composition_source: sourceName
-            )
-        case .nutrition:
-            return UserDataSourcePreferences(
-                activity_source: activity_source,
-                sleep_source: sleep_source,
-                nutrition_source: sourceName,
-                body_composition_source: body_composition_source
+                body_composition_source: body_composition_source,
+                heart_health_source: heart_health_source
             )
         case .sleep:
             return UserDataSourcePreferences(
                 activity_source: activity_source,
                 sleep_source: sourceName,
                 nutrition_source: nutrition_source,
-                body_composition_source: body_composition_source
+                body_composition_source: body_composition_source,
+                heart_health_source: heart_health_source
+            )
+        case .nutrition:
+            return UserDataSourcePreferences(
+                activity_source: activity_source,
+                sleep_source: sleep_source,
+                nutrition_source: sourceName,
+                body_composition_source: body_composition_source,
+                heart_health_source: heart_health_source
+            )
+        case .bodyComposition:
+            return UserDataSourcePreferences(
+                activity_source: activity_source,
+                sleep_source: sleep_source,
+                nutrition_source: nutrition_source,
+                body_composition_source: sourceName,
+                heart_health_source: heart_health_source
+            )
+        case .heartHealth:
+            return UserDataSourcePreferences(
+                activity_source: activity_source,
+                sleep_source: sleep_source,
+                nutrition_source: nutrition_source,
+                body_composition_source: body_composition_source,
+                heart_health_source: sourceName
             )
         }
     }

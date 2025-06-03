@@ -318,10 +318,9 @@ class NetworkManager: ObservableObject {
     }
     
     func setPreferredSourceForCategory(category: HealthCategory, sourceName: String) async throws {
-        let formData = ["source_name": sourceName]
-        let _: EmptyResponse = try await performFormRequest(
-            endpoint: "/api/v1/preferences/category/\(category.rawValue)/set-preferred",
-            formData: formData
+        let _: EmptyResponse = try await requestWithoutBody(
+            endpoint: "/api/v1/preferences/category/\(category.rawValue)/set-preferred?source_name=\(sourceName)",
+            method: .POST
         )
     }
     

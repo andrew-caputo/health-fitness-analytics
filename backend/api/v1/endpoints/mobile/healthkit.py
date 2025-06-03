@@ -383,9 +383,9 @@ def _get_category_from_metric_type(metric_type: str) -> str:
         'body_fat_percentage': 'body_composition',
         
         # Heart Health
-        'heart_rate': 'activity',
-        'heart_rate_variability': 'activity',
-        'resting_heart_rate': 'activity',
+        'heart_rate': 'heart_health',
+        'heart_rate_variability': 'heart_health',
+        'resting_heart_rate': 'heart_health',
         
         # Nutrition
         'nutrition_calories': 'nutrition',

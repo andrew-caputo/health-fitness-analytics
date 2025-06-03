@@ -274,7 +274,7 @@ extension HealthCategory {
         case .bodyComposition: return .purple
         case .nutrition: return .green
         case .sleep: return .indigo
-        case .heart: return .red
+        case .heartHealth: return .red
         case .workouts: return .orange
         }
     }
@@ -287,6 +287,7 @@ extension PreferenceDataSource {
         if supports_sleep { count += 1 }
         if supports_nutrition { count += 1 }
         if supports_body_composition { count += 1 }
+        if supports_heart_health { count += 1 }
         return count
     }
 }
