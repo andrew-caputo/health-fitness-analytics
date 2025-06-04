@@ -96,5 +96,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>LSEnvironment</key>
+	<dict>
+		<key>OS_ACTIVITY_MODE</key>
+		<string>enable</string>
+	</dict>
 </dict>
 </plist>

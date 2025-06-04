@@ -2,6 +2,7 @@ import Foundation
 import HealthKit
 import UIKit
 import Combine
+import os.log
 
 @MainActor
 class HealthDataManager: ObservableObject {
@@ -13,6 +14,9 @@ class HealthDataManager: ObservableObject {
     
     // Network manager for backend data sources
     private let networkManager = NetworkManager.shared
+    
+    // Unified logging
+    private let logger = Logger(subsystem: "com.healthdatahub.app", category: "HealthDataManager")
     
     @Published var isAuthorized = false
     @Published var authorizationStatus: HKAuthorizationStatus = .notDetermined
@@ -406,6 +410,7 @@ class HealthDataManager: ObservableObject {
     
     func syncLatestData() {
         print("🔄 === SYNC LATEST DATA STARTED ===")
+        logger.info("🔄 === SYNC LATEST DATA STARTED ===")
         syncStatus = .syncing
         
         Task {
@@ -416,12 +421,15 @@ class HealthDataManager: ObservableObject {
     
     private func loadUserPreferences() async {
         print("📋 Loading user preferences...")
+        logger.info("📋 Loading user preferences...")
         do {
             let response = try await networkManager.getUserDataSourcePreferences()
             self.userPreferences = response.preferences
             print("✅ User preferences loaded: \(String(describing: self.userPreferences))")
+            logger.info("✅ User preferences loaded: \(String(describing: self.userPreferences))")
         } catch {
             print("❌ Failed to load user preferences: \(error)")
+            logger.error("❌ Failed to load user preferences: \(error.localizedDescription)")
             // Fall back to default preferences (Apple Health for all)
             self.userPreferences = UserDataSourcePreferences(
                 activity_source: "apple_health",
@@ -431,6 +439,7 @@ class HealthDataManager: ObservableObject {
                 heart_health_source: "apple_health"
             )
             print("📋 Using fallback preferences: apple_health for all categories")
+            logger.info("📋 Using fallback preferences: apple_health for all categories")
         }
     }
     

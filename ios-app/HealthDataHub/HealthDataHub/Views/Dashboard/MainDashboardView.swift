@@ -175,9 +175,26 @@ struct DashboardHomeView: View {
                                 icon: "arrow.clockwise",
                                 title: "Sync Health Data",
                                 action: {
+                                    NSLog("🚨 BUTTON TAP DETECTED - Sync button was pressed")
+                                    
+                                    // Multiple logging methods for device compatibility
                                     print("🔄 === SYNC BUTTON TAPPED ===")
+                                    NSLog("🔄 === SYNC BUTTON TAPPED ===")
+                                    
                                     print("🔄 Manual sync triggered from dashboard")
+                                    NSLog("🔄 Manual sync triggered from dashboard")
+                                    
                                     print("🔄 Auth status before sync: \(healthDataManager.isAuthorized)")
+                                    NSLog("🔄 Auth status before sync: %@", healthDataManager.isAuthorized ? "true" : "false")
+                                    
+                                    #if targetEnvironment(simulator)
+                                        print("🔄 Running on SIMULATOR")
+                                        NSLog("🔄 Running on SIMULATOR")
+                                    #else
+                                        print("🔄 Running on DEVICE")
+                                        NSLog("🔄 Running on DEVICE")
+                                    #endif
+                                    
                                     healthDataManager.syncLatestData()
                                 }
                             )
@@ -186,13 +203,38 @@ struct DashboardHomeView: View {
                                 icon: "stethoscope",
                                 title: "Debug Data Flow",
                                 action: {
+                                    NSLog("🚨 BUTTON TAP DETECTED - Debug button was pressed")
+                                    
+                                    // Multiple logging methods for device compatibility
                                     print("🔍 === DEBUG BUTTON TAPPED ===")
+                                    NSLog("🔍 === DEBUG BUTTON TAPPED ===")
+                                    
                                     print("🔍 === MANUAL DEBUG SYNC TRIGGERED ===")
+                                    NSLog("🔍 === MANUAL DEBUG SYNC TRIGGERED ===")
+                                    
                                     print("🔍 Authorization status: \(healthDataManager.isAuthorized)")
+                                    NSLog("🔍 Authorization status: %@", healthDataManager.isAuthorized ? "true" : "false")
+                                    
+                                    #if targetEnvironment(simulator)
+                                        print("🔍 Running on SIMULATOR")
+                                        NSLog("🔍 Running on SIMULATOR")
+                                    #else
+                                        print("🔍 Running on DEVICE")
+                                        NSLog("🔍 Running on DEVICE")
+                                    #endif
+                                    
                                     print("🔍 Current sync status: \(healthDataManager.syncStatus)")
+                                    NSLog("🔍 Current sync status: %@", String(describing: healthDataManager.syncStatus))
+                                    
                                     print("🔍 Current user preferences: \(String(describing: healthDataManager.userPreferences))")
+                                    NSLog("🔍 Current user preferences: %@", String(describing: healthDataManager.userPreferences))
+                                    
                                     print("🔍 Current data values - Steps: \(healthDataManager.todaySteps), Calories: \(healthDataManager.todayActiveCalories), HR: \(healthDataManager.currentHeartRate), Sleep: \(healthDataManager.lastNightSleep)")
+                                    NSLog("🔍 Steps: %d, Calories: %d, HR: %d, Sleep: %.0f", healthDataManager.todaySteps, healthDataManager.todayActiveCalories, healthDataManager.currentHeartRate, healthDataManager.lastNightSleep)
+                                    
                                     print("🔍 About to call syncLatestData()...")
+                                    NSLog("🔍 About to call syncLatestData()...")
+                                    
                                     healthDataManager.syncLatestData()
                                 }
                             )
