@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MainDashboardView: View {
     @StateObject private var networkManager = NetworkManager.shared
-    @StateObject private var healthDataManager = HealthDataManager.shared
+    @EnvironmentObject var healthDataManager: HealthDataManager
     @StateObject private var viewModel = MainDashboardViewModel()
     @State private var selectedTab = 0
     @State private var isSettingsPresented = false
@@ -74,7 +74,7 @@ struct MainDashboardView: View {
 // MARK: - Dashboard Home View
 
 struct DashboardHomeView: View {
-    @StateObject private var healthDataManager = HealthDataManager.shared
+    @EnvironmentObject var healthDataManager: HealthDataManager
     
     init() {
         print("🏠 === DashboardHomeView INITIALIZED ===")
@@ -520,7 +520,7 @@ struct QuickActionRow: View {
 
 struct SettingsView: View {
     @StateObject private var networkManager = NetworkManager.shared
-    @StateObject private var healthDataManager = HealthDataManager.shared
+    @EnvironmentObject var healthDataManager: HealthDataManager
     
     var body: some View {
         NavigationView {

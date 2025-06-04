@@ -13,7 +13,13 @@ class NetworkManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     private init() {
-        self.session = URLSession(configuration: .default)
+        // Configure URLSession with proper timeouts to prevent app freezing
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 10.0 // 10 second timeout for requests
+        config.timeoutIntervalForResource = 30.0 // 30 second timeout for entire resource
+        config.waitsForConnectivity = false // Don't wait indefinitely for network
+        
+        self.session = URLSession(configuration: config)
         startNetworkMonitoring()
     }
     
@@ -379,6 +385,124 @@ class NetworkManager: ObservableObject {
         UserDefaults.standard.set(newDeviceId, forKey: "device_id")
         return newDeviceId
     }
+    
+    // MARK: - Data Source API Methods
+    
+    // CRITICAL: These methods replace the mock data generation with real backend API calls
+    
+    // Withings API methods
+    func fetchWithingsActivityData(startDate: Date, endDate: Date) async throws -> ActivityDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/withings/activity?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchWithingsSleepData(startDate: Date, endDate: Date) async throws -> SleepDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/withings/sleep?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchWithingsHeartRateData(startDate: Date, endDate: Date) async throws -> HeartRateDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/withings/heart-rate?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchWithingsBodyCompositionData(startDate: Date, endDate: Date) async throws -> BodyCompositionDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/withings/body-composition?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    // Oura API methods
+    func fetchOuraActivityData(startDate: Date, endDate: Date) async throws -> ActivityDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/oura/activity?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchOuraSleepData(startDate: Date, endDate: Date) async throws -> SleepDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/oura/sleep?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchOuraHeartRateData(startDate: Date, endDate: Date) async throws -> HeartRateDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/oura/heart-rate?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    // Fitbit API methods
+    func fetchFitbitActivityData(startDate: Date, endDate: Date) async throws -> ActivityDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/fitbit/activity?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchFitbitSleepData(startDate: Date, endDate: Date) async throws -> SleepDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/fitbit/sleep?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchFitbitHeartRateData(startDate: Date, endDate: Date) async throws -> HeartRateDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/fitbit/heart-rate?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchFitbitBodyCompositionData(startDate: Date, endDate: Date) async throws -> BodyCompositionDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/fitbit/body-composition?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    // WHOOP API methods
+    func fetchWhoopActivityData(startDate: Date, endDate: Date) async throws -> ActivityDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/whoop/activity?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchWhoopSleepData(startDate: Date, endDate: Date) async throws -> SleepDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/whoop/sleep?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchWhoopHeartRateData(startDate: Date, endDate: Date) async throws -> HeartRateDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/whoop/heart-rate?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchWhoopBodyCompositionData(startDate: Date, endDate: Date) async throws -> BodyCompositionDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/whoop/body-composition?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    // Strava API methods
+    func fetchStravaActivityData(startDate: Date, endDate: Date) async throws -> ActivityDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/strava/activity?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchStravaHeartRateData(startDate: Date, endDate: Date) async throws -> HeartRateDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/strava/heart-rate?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    // FatSecret API methods
+    func fetchFatSecretNutritionData(startDate: Date, endDate: Date) async throws -> NutritionDataResponse {
+        let dateFormatter = ISO8601DateFormatter()
+        let endpoint = "/api/v1/data-sources/fatsecret/nutrition?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
 }
 
 // MARK: - Supporting Types
@@ -519,4 +643,57 @@ enum KeychainError: Error {
     case unableToStore
     case unableToRetrieve
     case unableToDelete
+}
+
+// MARK: - Data Source API Response Models
+
+struct ActivityDataResponse: Codable {
+    let steps: Int?
+    let activeCalories: Int?
+    let distance: Double?
+    let source: String?
+    let timestamp: Date?
+}
+
+struct SleepDataResponse: Codable {
+    let sleepDuration: TimeInterval?
+    let deepSleep: TimeInterval?
+    let lightSleep: TimeInterval?
+    let remSleep: TimeInterval?
+    let source: String?
+    let timestamp: Date?
+}
+
+struct HeartRateDataResponse: Codable {
+    let heartRate: Int?
+    let restingHeartRate: Int?
+    let maxHeartRate: Int?
+    let source: String?
+    let timestamp: Date?
+}
+
+struct NutritionDataResponse: Codable {
+    let calories: Int?
+    let protein: Double?
+    let carbs: Double?
+    let fat: Double?
+    let source: String?
+    let timestamp: Date?
+}
+
+struct BodyCompositionDataResponse: Codable {
+    let weight: Double?
+    let bodyFat: Double?
+    let muscleMass: Double?
+    let bmi: Double?
+    let source: String?
+    let timestamp: Date?
+    let dataPoints: [BodyCompositionDataPoint]?
+}
+
+struct BodyCompositionDataPoint: Codable {
+    let metric: String
+    let value: Double
+    let unit: String
+    let timestamp: Date
 } 

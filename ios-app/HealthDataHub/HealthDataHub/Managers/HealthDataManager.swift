@@ -32,6 +32,7 @@ class HealthDataManager: ObservableObject {
     @Published var todaySteps: Int = 0
     @Published var todayActiveCalories: Int = 0
     @Published var currentHeartRate: Int = 0
+    @Published var currentWeight: Double = 0.0 // in pounds
     @Published var lastNightSleep: TimeInterval = 0 // in seconds
     @Published var todayNutritionCalories: Int = 0
     
@@ -625,8 +626,7 @@ class HealthDataManager: ObservableObject {
     }
     
     private func readBodyCompositionFromHealthKit(startDate: Date, endDate: Date) async {
-        // Body composition reading logic would go here
-        print("Reading body composition data from HealthKit")
+        await readCurrentWeightFromHealthKit()
     }
     
     private func readHeartRateFromHealthKit(startDate: Date, endDate: Date) async {
@@ -757,6 +757,39 @@ class HealthDataManager: ObservableObject {
                 DispatchQueue.main.async {
                     let calories = result?.sumQuantity()?.doubleValue(for: HKUnit.kilocalorie()) ?? 0
                     self.todayNutritionCalories = Int(calories)
+                    continuation.resume()
+                }
+            }
+            healthStore.execute(query)
+        }
+    }
+    
+    private func readCurrentWeightFromHealthKit() async {
+        print("⚖️ Reading current weight from HealthKit")
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            guard let weightType = HKQuantityType.quantityType(forIdentifier: .bodyMass) else {
+                print("❌ Body mass type not available")
+                continuation.resume()
+                return
+            }
+            
+            // Get the most recent weight reading (within last 30 days)
+            let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+            let predicate = HKQuery.predicateForSamples(withStart: thirtyDaysAgo, end: Date(), options: .strictStartDate)
+            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+            
+            let query = HKSampleQuery(sampleType: weightType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("❌ Error reading weight: \(error.localizedDescription)")
+                    } else if let weightSample = samples?.first as? HKQuantitySample {
+                        let weightInPounds = weightSample.quantity.doubleValue(for: HKUnit.pound())
+                        print("✅ Successfully read current weight: \(weightInPounds) lbs")
+                        self.currentWeight = weightInPounds
+                    } else {
+                        print("⚠️ No weight data found in the last 30 days")
+                        self.currentWeight = 0.0
+                    }
                     continuation.resume()
                 }
             }
@@ -1059,175 +1092,316 @@ class HealthDataManager: ObservableObject {
         }
     }
     
-    // MARK: - Source-Specific Data Fetching (Mock Implementation)
+    // MARK: - Source-Specific Data Fetching (Real Backend Integration)
+    
+    // CRITICAL: This section was previously using Int.random() and Double.random()
+    // Now replaced with real backend API calls and proper fallback handling
     
     // Withings methods
     private func fetchWithingsActivityData(startDate: Date, endDate: Date) async {
-        // Withings typically provides lower step counts but higher accuracy
-        let withingsSteps = Int.random(in: 6000...8000)
-        let withingsCalories = Int.random(in: 300...450)
-        
-        await MainActor.run {
-            self.todaySteps = withingsSteps
-            self.todayActiveCalories = withingsCalories
+        print("🔗 Fetching Withings activity data from backend API...")
+        do {
+            // Call real backend API endpoint for Withings activity data with timeout protection
+            let response = try await withTimeout(seconds: 8) { [self] in
+                try await self.networkManager.fetchWithingsActivityData(startDate: startDate, endDate: endDate)
+            }
+            
+            await MainActor.run {
+                self.todaySteps = response.steps ?? self.todaySteps
+                self.todayActiveCalories = response.activeCalories ?? self.todayActiveCalories
+            }
+            print("✅ Fetched real Withings activity: \(response.steps ?? 0) steps, \(response.activeCalories ?? 0) calories")
+        } catch {
+            print("❌ Error fetching Withings activity data: \(error)")
+            // Fallback: Keep existing HealthKit data if backend fails
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Withings activity: \(withingsSteps) steps, \(withingsCalories) calories")
     }
     
     private func fetchWithingsSleepData(startDate: Date, endDate: Date) async {
-        // Withings Sleep sensor provides detailed sleep analysis
-        let withingsSleep = TimeInterval.random(in: 6.5*3600...8.5*3600) // 6.5-8.5 hours
-        
-        await MainActor.run {
-            self.lastNightSleep = withingsSleep
+        print("🔗 Fetching Withings sleep data from backend API...")
+        do {
+            let response = try await networkManager.fetchWithingsSleepData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.lastNightSleep = response.sleepDuration ?? self.lastNightSleep
+            }
+            print("✅ Fetched real Withings sleep: \((response.sleepDuration ?? 0)/3600) hours")
+        } catch {
+            print("❌ Error fetching Withings sleep data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Withings sleep: \(withingsSleep/3600) hours")
     }
     
     private func fetchWithingsHeartRateData(startDate: Date, endDate: Date) async {
-        let withingsHeartRate = Int.random(in: 65...75) // Withings tends to show lower resting HR
-        
-        await MainActor.run {
-            self.currentHeartRate = withingsHeartRate
+        print("🔗 Fetching Withings heart rate data from backend API...")
+        do {
+            let response = try await networkManager.fetchWithingsHeartRateData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.currentHeartRate = response.heartRate ?? self.currentHeartRate
+            }
+            print("✅ Fetched real Withings heart rate: \(response.heartRate ?? 0) BPM")
+        } catch {
+            print("❌ Error fetching Withings heart rate data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Withings heart rate: \(withingsHeartRate) BPM")
     }
     
     private func fetchWithingsBodyCompositionData(startDate: Date, endDate: Date) async {
-        print("✅ Fetched Withings body composition data")
+        print("🔗 Fetching Withings body composition data from backend API...")
+        do {
+            let response = try await networkManager.fetchWithingsBodyCompositionData(startDate: startDate, endDate: endDate)
+            print("✅ Fetched real Withings body composition data: \(response.dataPoints?.count ?? 0) data points")
+        } catch {
+            print("❌ Error fetching Withings body composition data: \(error)")
+        }
     }
     
     // Oura methods
     private func fetchOuraActivityData(startDate: Date, endDate: Date) async {
-        // Oura focuses on recovery, typically shows lower activity
-        let ouraSteps = Int.random(in: 5000...7000)
-        let ouraCalories = Int.random(in: 250...400)
-        
-        await MainActor.run {
-            self.todaySteps = ouraSteps
-            self.todayActiveCalories = ouraCalories
+        print("🔗 Fetching Oura activity data from backend API...")
+        do {
+            let response = try await networkManager.fetchOuraActivityData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.todaySteps = response.steps ?? self.todaySteps
+                self.todayActiveCalories = response.activeCalories ?? self.todayActiveCalories
+            }
+            print("✅ Fetched real Oura activity: \(response.steps ?? 0) steps, \(response.activeCalories ?? 0) calories")
+        } catch {
+            print("❌ Error fetching Oura activity data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Oura activity: \(ouraSteps) steps, \(ouraCalories) calories")
     }
     
     private func fetchOuraSleepData(startDate: Date, endDate: Date) async {
-        // Oura is known for excellent sleep tracking
-        let ouraSleep = TimeInterval.random(in: 7*3600...9*3600) // 7-9 hours
-        
-        await MainActor.run {
-            self.lastNightSleep = ouraSleep
+        print("🔗 Fetching Oura sleep data from backend API...")
+        do {
+            let response = try await networkManager.fetchOuraSleepData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.lastNightSleep = response.sleepDuration ?? self.lastNightSleep
+            }
+            print("✅ Fetched real Oura sleep: \((response.sleepDuration ?? 0)/3600) hours")
+        } catch {
+            print("❌ Error fetching Oura sleep data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Oura sleep: \(ouraSleep/3600) hours")
     }
     
     private func fetchOuraHeartRateData(startDate: Date, endDate: Date) async {
-        let ouraHeartRate = Int.random(in: 60...70) // Oura shows recovery-focused HR
-        
-        await MainActor.run {
-            self.currentHeartRate = ouraHeartRate
+        print("🔗 Fetching Oura heart rate data from backend API...")
+        do {
+            let response = try await networkManager.fetchOuraHeartRateData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.currentHeartRate = response.heartRate ?? self.currentHeartRate
+            }
+            print("✅ Fetched real Oura heart rate: \(response.heartRate ?? 0) BPM")
+        } catch {
+            print("❌ Error fetching Oura heart rate data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Oura heart rate: \(ouraHeartRate) BPM")
     }
     
     // Fitbit methods
     private func fetchFitbitActivityData(startDate: Date, endDate: Date) async {
-        // Fitbit typically shows higher step counts
-        let fitbitSteps = Int.random(in: 8000...12000)
-        let fitbitCalories = Int.random(in: 400...600)
-        
-        await MainActor.run {
-            self.todaySteps = fitbitSteps
-            self.todayActiveCalories = fitbitCalories
+        print("🔗 Fetching Fitbit activity data from backend API...")
+        do {
+            let response = try await networkManager.fetchFitbitActivityData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.todaySteps = response.steps ?? self.todaySteps
+                self.todayActiveCalories = response.activeCalories ?? self.todayActiveCalories
+            }
+            print("✅ Fetched real Fitbit activity: \(response.steps ?? 0) steps, \(response.activeCalories ?? 0) calories")
+        } catch {
+            print("❌ Error fetching Fitbit activity data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Fitbit activity: \(fitbitSteps) steps, \(fitbitCalories) calories")
     }
     
     private func fetchFitbitSleepData(startDate: Date, endDate: Date) async {
-        let fitbitSleep = TimeInterval.random(in: 6*3600...8*3600) // 6-8 hours
-        
-        await MainActor.run {
-            self.lastNightSleep = fitbitSleep
+        print("🔗 Fetching Fitbit sleep data from backend API...")
+        do {
+            let response = try await networkManager.fetchFitbitSleepData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.lastNightSleep = response.sleepDuration ?? self.lastNightSleep
+            }
+            print("✅ Fetched real Fitbit sleep: \((response.sleepDuration ?? 0)/3600) hours")
+        } catch {
+            print("❌ Error fetching Fitbit sleep data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Fitbit sleep: \(fitbitSleep/3600) hours")
     }
     
     private func fetchFitbitHeartRateData(startDate: Date, endDate: Date) async {
-        let fitbitHeartRate = Int.random(in: 70...80) // Fitbit often shows slightly higher
-        
-        await MainActor.run {
-            self.currentHeartRate = fitbitHeartRate
+        print("🔗 Fetching Fitbit heart rate data from backend API...")
+        do {
+            let response = try await networkManager.fetchFitbitHeartRateData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.currentHeartRate = response.heartRate ?? self.currentHeartRate
+            }
+            print("✅ Fetched real Fitbit heart rate: \(response.heartRate ?? 0) BPM")
+        } catch {
+            print("❌ Error fetching Fitbit heart rate data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Fitbit heart rate: \(fitbitHeartRate) BPM")
     }
     
     private func fetchFitbitBodyCompositionData(startDate: Date, endDate: Date) async {
-        print("✅ Fetched Fitbit body composition data")
+        print("🔗 Fetching Fitbit body composition data from backend API...")
+        do {
+            let response = try await networkManager.fetchFitbitBodyCompositionData(startDate: startDate, endDate: endDate)
+            print("✅ Fetched real Fitbit body composition data: \(response.dataPoints?.count ?? 0) data points")
+        } catch {
+            print("❌ Error fetching Fitbit body composition data: \(error)")
+        }
     }
     
     // WHOOP methods
     private func fetchWhoopActivityData(startDate: Date, endDate: Date) async {
-        // WHOOP focuses on strain, usually shows moderate activity
-        let whoopSteps = Int.random(in: 6000...9000)
-        let whoopCalories = Int.random(in: 350...500)
-        
-        await MainActor.run {
-            self.todaySteps = whoopSteps
-            self.todayActiveCalories = whoopCalories
+        print("🔗 Fetching WHOOP activity data from backend API...")
+        do {
+            let response = try await networkManager.fetchWhoopActivityData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.todaySteps = response.steps ?? self.todaySteps
+                self.todayActiveCalories = response.activeCalories ?? self.todayActiveCalories
+            }
+            print("✅ Fetched real WHOOP activity: \(response.steps ?? 0) steps, \(response.activeCalories ?? 0) calories")
+        } catch {
+            print("❌ Error fetching WHOOP activity data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched WHOOP activity: \(whoopSteps) steps, \(whoopCalories) calories")
     }
     
     private func fetchWhoopSleepData(startDate: Date, endDate: Date) async {
-        let whoopSleep = TimeInterval.random(in: 7.5*3600...9.5*3600) // WHOOP emphasizes recovery
-        
-        await MainActor.run {
-            self.lastNightSleep = whoopSleep
+        print("🔗 Fetching WHOOP sleep data from backend API...")
+        do {
+            let response = try await networkManager.fetchWhoopSleepData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.lastNightSleep = response.sleepDuration ?? self.lastNightSleep
+            }
+            print("✅ Fetched real WHOOP sleep: \((response.sleepDuration ?? 0)/3600) hours")
+        } catch {
+            print("❌ Error fetching WHOOP sleep data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched WHOOP sleep: \(whoopSleep/3600) hours")
     }
     
     private func fetchWhoopHeartRateData(startDate: Date, endDate: Date) async {
-        let whoopHeartRate = Int.random(in: 55...65) // WHOOP shows recovery-focused metrics
-        
-        await MainActor.run {
-            self.currentHeartRate = whoopHeartRate
+        print("🔗 Fetching WHOOP heart rate data from backend API...")
+        do {
+            let response = try await networkManager.fetchWhoopHeartRateData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.currentHeartRate = response.heartRate ?? self.currentHeartRate
+            }
+            print("✅ Fetched real WHOOP heart rate: \(response.heartRate ?? 0) BPM")
+        } catch {
+            print("❌ Error fetching WHOOP heart rate data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched WHOOP heart rate: \(whoopHeartRate) BPM")
     }
     
     private func fetchWhoopBodyCompositionData(startDate: Date, endDate: Date) async {
-        print("✅ Fetched WHOOP body composition data")
+        print("🔗 Fetching WHOOP body composition data from backend API...")
+        do {
+            let response = try await networkManager.fetchWhoopBodyCompositionData(startDate: startDate, endDate: endDate)
+            print("✅ Fetched real WHOOP body composition data: \(response.dataPoints?.count ?? 0) data points")
+        } catch {
+            print("❌ Error fetching WHOOP body composition data: \(error)")
+        }
     }
     
     // Strava methods
     private func fetchStravaActivityData(startDate: Date, endDate: Date) async {
-        // Strava focuses on workouts, may show higher intensity metrics
-        let stravaSteps = Int.random(in: 7000...15000) // Wide range due to workout focus
-        let stravaCalories = Int.random(in: 500...800)
-        
-        await MainActor.run {
-            self.todaySteps = stravaSteps
-            self.todayActiveCalories = stravaCalories
+        print("🔗 Fetching Strava activity data from backend API...")
+        do {
+            let response = try await networkManager.fetchStravaActivityData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.todaySteps = response.steps ?? self.todaySteps
+                self.todayActiveCalories = response.activeCalories ?? self.todayActiveCalories
+            }
+            print("✅ Fetched real Strava activity: \(response.steps ?? 0) steps, \(response.activeCalories ?? 0) calories")
+        } catch {
+            print("❌ Error fetching Strava activity data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Strava activity: \(stravaSteps) steps, \(stravaCalories) calories")
     }
     
     private func fetchStravaHeartRateData(startDate: Date, endDate: Date) async {
-        let stravaHeartRate = Int.random(in: 75...90) // Exercise-focused, typically higher
-        
-        await MainActor.run {
-            self.currentHeartRate = stravaHeartRate
+        print("🔗 Fetching Strava heart rate data from backend API...")
+        do {
+            let response = try await networkManager.fetchStravaHeartRateData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.currentHeartRate = response.heartRate ?? self.currentHeartRate
+            }
+            print("✅ Fetched real Strava heart rate: \(response.heartRate ?? 0) BPM")
+        } catch {
+            print("❌ Error fetching Strava heart rate data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched Strava heart rate: \(stravaHeartRate) BPM")
     }
     
     // FatSecret methods
     private func fetchFatSecretNutritionData(startDate: Date, endDate: Date) async {
-        let fatSecretCalories = Int.random(in: 1800...2200)
-        
-        await MainActor.run {
-            self.todayNutritionCalories = fatSecretCalories
+        print("🔗 Fetching FatSecret nutrition data from backend API...")
+        do {
+            let response = try await networkManager.fetchFatSecretNutritionData(startDate: startDate, endDate: endDate)
+            
+            await MainActor.run {
+                self.todayNutritionCalories = response.calories ?? self.todayNutritionCalories
+            }
+            print("✅ Fetched real FatSecret nutrition: \(response.calories ?? 0) calories")
+        } catch {
+            print("❌ Error fetching FatSecret nutrition data: \(error)")
+            print("📱 Using existing HealthKit data as fallback")
         }
-        print("✅ Fetched FatSecret nutrition: \(fatSecretCalories) calories")
+    }
+}
+
+// MARK: - Shared Timeout Utility Error
+
+/// Shared timeout error that can be used across the app
+struct TimeoutError: Error {
+    var localizedDescription: String {
+        return "Operation timed out"
+    }
+}
+
+// MARK: - Timeout Utility
+
+extension HealthDataManager {
+    /// Executes an async operation with a timeout to prevent indefinite hanging
+    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+        return try await withThrowingTaskGroup(of: T.self) { group in
+            // Add the main operation
+            group.addTask {
+                try await operation()
+            }
+            
+            // Add timeout task
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw TimeoutError()
+            }
+            
+            // Return the first result (either success or timeout)
+            guard let result = try await group.next() else {
+                throw TimeoutError()
+            }
+            
+            // Cancel remaining tasks
+            group.cancelAll()
+            return result
+        }
     }
 } 

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var networkManager = NetworkManager.shared
+    @StateObject private var healthDataManager = HealthDataManager.shared
     @State private var showDataSourceSelection = false
     @State private var isNewUser = false
     
@@ -13,11 +14,16 @@ struct ContentView: View {
                         showDataSourceSelection = false
                         isNewUser = false
                     })
+                    .environmentObject(healthDataManager)
+                    .environmentObject(networkManager)
                 } else {
                     MainDashboardView()
+                        .environmentObject(healthDataManager)
+                        .environmentObject(networkManager)
                 }
             } else {
                 LoginView()
+                    .environmentObject(networkManager)
             }
         }
         .onAppear {

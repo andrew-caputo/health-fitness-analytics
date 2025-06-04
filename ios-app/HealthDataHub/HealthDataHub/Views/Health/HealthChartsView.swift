@@ -11,6 +11,7 @@ struct HealthChartsView: View {
     @State private var chartData: [ChartDataPoint] = []
     @State private var isLoading = true
     @State private var showingMetricPicker = false
+    @State private var showingDataSourceSettings = false
     
     // MARK: - Initializers
     
@@ -102,11 +103,15 @@ struct HealthChartsView: View {
                     // Main Chart
                     mainChart
                     
-                    // Chart Statistics
+                    // Chart Statistics (only show if we have data)
+                    if !chartData.isEmpty {
                     chartStatistics
+                    }
                     
-                    // Data Sources Attribution
+                    // Data Sources Attribution (only show if we have data)
+                    if !chartData.isEmpty {
                     dataSourcesAttribution
+                    }
                 }
                 .padding()
             }
@@ -118,6 +123,18 @@ struct HealthChartsView: View {
         }
         .onAppear {
             Task {
+                // Request HealthKit permissions if not already granted
+                if !healthDataManager.isAuthorized {
+                    print("📱 HealthChartsView: Requesting HealthKit permissions...")
+                    healthDataManager.requestHealthKitPermissions()
+                }
+                
+                // Sync latest data from HealthKit
+                print("🔄 HealthChartsView: Syncing latest health data...")
+                healthDataManager.syncLatestData()
+                
+                // Load chart data after a brief delay to allow sync to complete
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
                 await loadChartData()
             }
         }
@@ -125,6 +142,19 @@ struct HealthChartsView: View {
             MetricPickerSheet(selectedMetric: $selectedMetric) {
                 Task {
                     await loadChartData()
+                }
+            }
+        }
+        .sheet(isPresented: $showingDataSourceSettings) {
+            NavigationView {
+                DataSourceSettingsView()
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                showingDataSourceSettings = false
+                            }
+                        }
                 }
             }
         }
@@ -206,22 +236,44 @@ struct HealthChartsView: View {
                             .scaleEffect(1.2)
                     )
             } else if chartData.isEmpty {
+                // Enhanced "No Data Available" state with clear call-to-action
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemGray6))
                     .frame(height: 250)
                     .overlay(
-                        VStack(spacing: 8) {
+                        VStack(spacing: 16) {
                             Image(systemName: "chart.line.uptrend.xyaxis")
                                 .font(.system(size: 40))
                                 .foregroundColor(.gray)
                             
-                            Text("No Data Available")
+                            VStack(spacing: 8) {
+                                Text("No \(selectedMetric.rawValue) Data")
                                 .font(.headline)
+                                    .foregroundColor(.primary)
+                                
+                                Text("Connect your health apps to see real data and insights")
+                                    .font(.subheadline)
                                 .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                            }
                             
-                            Text("Connect health apps to see your data")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            // Call-to-action button
+                            Button(action: {
+                                showingDataSourceSettings = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "plus.circle.fill")
+                                    Text("Connect Data Sources")
+                                }
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(selectedMetric.color)
+                                .cornerRadius(20)
+                            }
                         }
                     )
             } else {
@@ -366,65 +418,397 @@ struct HealthChartsView: View {
     // MARK: - Helper Methods
     
     private func loadChartData() async {
+        await MainActor.run {
         isLoading = true
+        }
         
-        // Simulate loading data from HealthKit and backend
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        do {
+            // Load real historical data using async HealthKit queries
+            let chartData = try await withTimeout(seconds: 30) { // Increased timeout for multiple HealthKit queries
+                await generateRealHistoricalData()
+            }
         
         await MainActor.run {
-            chartData = generateMockData()
-            isLoading = false
+                // Set chart data - empty array will trigger "No Data Available" state
+                self.chartData = chartData
+                self.isLoading = false
+                print("📊 Chart loaded with \(chartData.count) data points")
+            }
+        } catch {
+            print("❌ Chart data loading failed or timed out: \(error)")
+            // Show empty state on error
+            await MainActor.run {
+                self.chartData = []
+                self.isLoading = false
+            }
         }
     }
     
-    private func generateMockData() -> [ChartDataPoint] {
+    // Timeout utility for view operations
+    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+        return try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+            
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw TimeoutError()
+            }
+            
+            guard let result = try await group.next() else {
+                throw TimeoutError()
+            }
+            
+            group.cancelAll()
+            return result
+        }
+    }
+    
+    // Generate historical data ONLY from real HealthKit values - no fake data
+    private func generateRealHistoricalData() async -> [ChartDataPoint] {
         let calendar = Calendar.current
         let endDate = Date()
         let startDate = calendar.date(byAdding: .day, value: -selectedTimeRange.days, to: endDate) ?? endDate
         
-        var data: [ChartDataPoint] = []
-        let sources = ["Apple Watch", "MyFitnessPal", "Strava", "Sleep Cycle"]
+        print("🔍 Loading REAL historical data for \(selectedMetric.rawValue) from \(startDate) to \(endDate)")
         
+        // Get user's actual data source preference for attribution
+        let userDataSource = getUserDataSourceForMetric(selectedMetric)
+        
+        // Generate data points for each day in the range using REAL HealthKit queries
+        var data: [ChartDataPoint] = []
+        
+        // Use async concurrent queries for better performance
+        await withTaskGroup(of: (Date, Double?).self) { group in
         for i in 0..<selectedTimeRange.days {
             if let date = calendar.date(byAdding: .day, value: i, to: startDate) {
-                let baseValue: Double
-                let variation = Double.random(in: 0.8...1.2)
-                
-                switch selectedMetric {
-                case .steps:
-                    baseValue = Double.random(in: 6000...12000) * variation
-                case .heartRate:
-                    baseValue = Double.random(in: 60...85) * variation
-                case .activeEnergy:
-                    baseValue = Double.random(in: 300...800) * variation
-                case .sleep:
-                    baseValue = Double.random(in: 6.5...8.5) * variation
-                case .weight:
-                    baseValue = Double.random(in: 150...180) * variation
-                case .nutrition:
-                    baseValue = Double.random(in: 1800...2500) * variation
+                    group.addTask {
+                        let value = await self.getRealHealthKitValueForDateAsync(date: date, metric: self.selectedMetric)
+                        return (date, value)
+                    }
                 }
-                
-                data.append(ChartDataPoint(
-                    date: date,
-                    value: baseValue,
-                    source: sources.randomElement()
-                ))
+            }
+            
+            // Collect results
+            for await (date, value) in group {
+                if let realValue = value, realValue > 0 {
+                    data.append(ChartDataPoint(
+                        date: date,
+                        value: realValue,
+                        source: userDataSource
+                    ))
+                    print("📊 Added real data point: \(date) = \(realValue) \(selectedMetric.unit)")
+                }
             }
         }
         
-        return data.sorted { $0.date < $1.date }
+        // Sort by date and return
+        let sortedData = data.sorted { $0.date < $1.date }
+        print("✅ Generated \(sortedData.count) real historical data points for \(selectedMetric.rawValue)")
+        
+        return sortedData
+    }
+    
+    // Check if we have real data for a specific metric
+    private func hasRealDataForMetric(_ metric: HealthMetric) -> Bool {
+        let currentRealValue = getCurrentRealValueForMetric(metric)
+        
+        // Consider we have real data if the current value is above minimal thresholds
+        switch metric {
+                case .steps:
+            return currentRealValue > 0
+                case .heartRate:
+            return currentRealValue > 40 // Reasonable minimum heart rate
+                case .activeEnergy:
+            return currentRealValue > 0
+                case .sleep:
+            return currentRealValue > 0
+                case .weight:
+            return currentRealValue > 30 // Reasonable minimum weight in pounds
+        case .nutrition:
+            return currentRealValue > 0
+        }
+    }
+    
+    // Get actual HealthKit data for a specific date and metric - returns nil if no real data
+    private func getRealHealthKitValueForDate(date: Date, metric: HealthMetric) -> Double? {
+        // This is a synchronous method but we need async HealthKit calls
+        // For now, return nil to force async loading in generateRealHistoricalData
+        return nil
+    }
+    
+    // NEW: Async method to get real historical HealthKit data for specific dates
+    private func getRealHealthKitValueForDateAsync(date: Date, metric: HealthMetric) async -> Double? {
+        return await withCheckedContinuation { continuation in
+            let calendar = Calendar.current
+            let startOfDay = calendar.startOfDay(for: date)
+            let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
+            
+            switch metric {
+            case .steps:
+                getRealStepsForDate(startDate: startOfDay, endDate: endOfDay) { value in
+                    continuation.resume(returning: value)
+                }
+            case .heartRate:
+                getRealHeartRateForDate(startDate: startOfDay, endDate: endOfDay) { value in
+                    continuation.resume(returning: value)
+                }
+            case .activeEnergy:
+                getRealActiveCaloriesForDate(startDate: startOfDay, endDate: endOfDay) { value in
+                    continuation.resume(returning: value)
+                }
+            case .sleep:
+                getRealSleepForDate(startDate: startOfDay, endDate: endOfDay) { value in
+                    continuation.resume(returning: value)
+                }
+                case .nutrition:
+                getRealNutritionForDate(startDate: startOfDay, endDate: endOfDay) { value in
+                    continuation.resume(returning: value)
+                }
+            case .weight:
+                getRealWeightForDate(startDate: startOfDay, endDate: endOfDay) { value in
+                    continuation.resume(returning: value)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Real HealthKit Queries for Historical Data
+    
+    private func getRealStepsForDate(startDate: Date, endDate: Date, completion: @escaping (Double?) -> Void) {
+        guard let stepCountType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+            completion(nil)
+            return
+        }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+        let query = HKStatisticsQuery(quantityType: stepCountType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, error in
+            if let error = error {
+                print("❌ Error reading steps for \(startDate): \(error.localizedDescription)")
+                completion(nil)
+            } else {
+                let steps = result?.sumQuantity()?.doubleValue(for: HKUnit.count())
+                print("✅ Read \(steps ?? 0) steps for \(startDate)")
+                completion(steps)
+            }
+        }
+        healthDataManager.healthStore.execute(query)
+    }
+    
+    private func getRealActiveCaloriesForDate(startDate: Date, endDate: Date, completion: @escaping (Double?) -> Void) {
+        guard let activeEnergyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
+            completion(nil)
+            return
+        }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+        let query = HKStatisticsQuery(quantityType: activeEnergyType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, error in
+            if let error = error {
+                print("❌ Error reading active calories for \(startDate): \(error.localizedDescription)")
+                completion(nil)
+            } else {
+                let calories = result?.sumQuantity()?.doubleValue(for: HKUnit.kilocalorie())
+                print("✅ Read \(calories ?? 0) active calories for \(startDate)")
+                completion(calories)
+            }
+        }
+        healthDataManager.healthStore.execute(query)
+    }
+    
+    private func getRealHeartRateForDate(startDate: Date, endDate: Date, completion: @escaping (Double?) -> Void) {
+        guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
+            completion(nil)
+            return
+        }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            if let error = error {
+                print("❌ Error reading heart rate for \(startDate): \(error.localizedDescription)")
+                completion(nil)
+            } else if let heartRateSamples = samples as? [HKQuantitySample], !heartRateSamples.isEmpty {
+                // Calculate average heart rate for the day
+                let totalHeartRate = heartRateSamples.reduce(0.0) { sum, sample in
+                    sum + sample.quantity.doubleValue(for: HKUnit(from: "count/min"))
+                }
+                let averageHeartRate = totalHeartRate / Double(heartRateSamples.count)
+                print("✅ Read average heart rate \(averageHeartRate) for \(startDate) from \(heartRateSamples.count) samples")
+                completion(averageHeartRate)
+            } else {
+                print("⚠️ No heart rate data found for \(startDate)")
+                completion(nil)
+            }
+        }
+        healthDataManager.healthStore.execute(query)
+    }
+    
+    private func getRealSleepForDate(startDate: Date, endDate: Date, completion: @escaping (Double?) -> Void) {
+        guard let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else {
+            completion(nil)
+            return
+        }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+        let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
+            if let error = error {
+                print("❌ Error reading sleep for \(startDate): \(error.localizedDescription)")
+                completion(nil)
+            } else {
+                let sleepSamples = samples as? [HKCategorySample] ?? []
+                let totalSleepTime = sleepSamples.reduce(0) { total, sample in
+                    return total + sample.endDate.timeIntervalSince(sample.startDate)
+                }
+                let sleepHours = totalSleepTime / 3600 // Convert to hours
+                print("✅ Read \(sleepHours) hours of sleep for \(startDate) from \(sleepSamples.count) samples")
+                completion(sleepHours > 0 ? sleepHours : nil)
+            }
+        }
+        healthDataManager.healthStore.execute(query)
+    }
+    
+    private func getRealNutritionForDate(startDate: Date, endDate: Date, completion: @escaping (Double?) -> Void) {
+        guard let caloriesType = HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed) else {
+            completion(nil)
+            return
+        }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+        let query = HKStatisticsQuery(quantityType: caloriesType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, error in
+            if let error = error {
+                print("❌ Error reading nutrition for \(startDate): \(error.localizedDescription)")
+                completion(nil)
+            } else {
+                let calories = result?.sumQuantity()?.doubleValue(for: HKUnit.kilocalorie())
+                print("✅ Read \(calories ?? 0) nutrition calories for \(startDate)")
+                completion(calories)
+            }
+        }
+        healthDataManager.healthStore.execute(query)
+    }
+    
+    private func getRealWeightForDate(startDate: Date, endDate: Date, completion: @escaping (Double?) -> Void) {
+        guard let weightType = HKQuantityType.quantityType(forIdentifier: .bodyMass) else {
+            print("❌ Unable to create weight quantity type")
+            completion(nil)
+            return
+        }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: weightType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            if let error = error {
+                print("❌ Error reading weight for \(startDate): \(error.localizedDescription)")
+                completion(nil)
+            } else if let weightSamples = samples as? [HKQuantitySample], let latestWeight = weightSamples.first {
+                let weightInPounds = latestWeight.quantity.doubleValue(for: HKUnit.pound())
+                print("✅ Read weight \(weightInPounds) lbs for \(startDate)")
+                completion(weightInPounds)
+            } else {
+                print("⚠️ No weight data found for \(startDate)")
+                completion(nil)
+            }
+        }
+        healthDataManager.healthStore.execute(query)
+    }
+    
+    // Get user's actual configured data source for the metric
+    private func getUserDataSourceForMetric(_ metric: HealthMetric) -> String {
+        guard let preferences = healthDataManager.userPreferences else {
+            return "Apple Health" // Default fallback
+        }
+        
+        switch metric {
+        case .steps, .activeEnergy:
+            return formatDataSourceName(preferences.activity_source ?? "apple_health")
+        case .heartRate:
+            return formatDataSourceName(preferences.heart_health_source ?? preferences.activity_source ?? "apple_health")
+        case .sleep:
+            return formatDataSourceName(preferences.sleep_source ?? "apple_health")
+        case .nutrition:
+            return formatDataSourceName(preferences.nutrition_source ?? "apple_health")
+        case .weight:
+            return formatDataSourceName(preferences.body_composition_source ?? "apple_health")
+        }
+    }
+    
+    // Convert backend source names to user-friendly display names
+    private func formatDataSourceName(_ source: String) -> String {
+        switch source.lowercased() {
+        case "apple_health", "apple", "healthkit":
+            return "Apple Health"
+        case "withings":
+            return "Withings"
+        case "oura":
+            return "Oura"
+        case "fitbit":
+            return "Fitbit"
+        case "whoop":
+            return "WHOOP"
+        case "strava":
+            return "Strava"
+        case "myfitnesspal":
+            return "MyFitnessPal"
+        case "cronometer":
+            return "Cronometer"
+        case "fatsecret":
+            return "FatSecret"
+        default:
+            return "Apple Health" // Fallback
+        }
+    }
+    
+    // Get current real value from HealthDataManager for baseline
+    private func getCurrentRealValueForMetric(_ metric: HealthMetric) -> Double {
+        let value: Double
+        switch metric {
+        case .steps:
+            value = Double(healthDataManager.todaySteps)
+        case .heartRate:
+            value = Double(healthDataManager.currentHeartRate)
+        case .activeEnergy:
+            value = Double(healthDataManager.todayActiveCalories)
+        case .sleep:
+            value = healthDataManager.lastNightSleep / 3600 // Convert seconds to hours
+        case .weight:
+            value = Double(healthDataManager.currentWeight) // Get real current weight from HealthDataManager
+        case .nutrition:
+            value = Double(healthDataManager.todayNutritionCalories)
+        }
+        
+        // Add debugging to see what values we're getting
+        print("📊 HealthChartsView: getCurrentRealValueForMetric(\(metric.rawValue)) = \(value)")
+        print("📊 HealthDataManager values - Steps: \(healthDataManager.todaySteps), HR: \(healthDataManager.currentHeartRate), Calories: \(healthDataManager.todayActiveCalories), Sleep: \(healthDataManager.lastNightSleep), Nutrition: \(healthDataManager.todayNutritionCalories)")
+        print("📊 HealthDataManager authorization status: \(healthDataManager.isAuthorized)")
+        
+        return value
     }
     
     private func colorForSource(_ source: String) -> Color {
         switch source.lowercased() {
-        case "apple watch": return .blue
-        case "myfitnesspal": return .orange
-        case "strava": return .red
-        case "sleep cycle": return .purple
-        case "oura": return .green
-        case "fitbit": return .cyan
-        default: return .gray
+        case "apple health", "apple watch", "apple", "healthkit":
+            return .blue
+        case "withings":
+            return .green
+        case "oura":
+            return .purple
+        case "fitbit":
+            return .cyan
+        case "whoop":
+            return .red
+        case "strava":
+            return .orange
+        case "myfitnesspal":
+            return .orange
+        case "cronometer":
+            return .mint
+        case "fatsecret":
+            return .yellow
+        case "sleep cycle":
+            return .purple
+        default:
+            return .blue // Default to blue for Apple Health
         }
     }
     
