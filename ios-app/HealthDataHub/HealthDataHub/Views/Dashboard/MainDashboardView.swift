@@ -130,37 +130,81 @@ struct DashboardHomeView: View {
                         GridItem(.flexible()),
                         GridItem(.flexible())
                     ], spacing: 16) {
-                        QuickStatCard(
-                            title: "Today's Steps",
-                            value: healthDataManager.todaySteps > 0 ? "\(healthDataManager.todaySteps)" : "No data",
-                            subtitle: displaySourceName(healthDataManager.userPreferences?.activity_source),
-                            icon: "figure.walk",
-                            color: .blue
-                        )
+                        NavigationLink(destination: HealthChartsView(initialMetric: .steps)) {
+                            QuickStatCard(
+                                title: "Today's Steps",
+                                value: healthDataManager.todaySteps > 0 ? "\(healthDataManager.todaySteps)" : "No data",
+                                subtitle: displaySourceName(healthDataManager.userPreferences?.activity_source),
+                                icon: "figure.walk",
+                                color: .blue,
+                                action: nil
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .simultaneousGesture(TapGesture().onEnded {
+                            NSLog("🚨 CARD TAP DETECTED - Today's Steps card was pressed")
+                            print("🚨 === TODAY'S STEPS CARD TAPPED ===")
+                            NSLog("🚨 === TODAY'S STEPS CARD TAPPED ===")
+                            print("📊 Navigating to steps detail in HealthChartsView...")
+                            NSLog("📊 Navigating to steps detail in HealthChartsView...")
+                        })
                         
-                        QuickStatCard(
-                            title: "Sleep",
-                            value: healthDataManager.lastNightSleep > 0 ? formatSleepDuration(healthDataManager.lastNightSleep) : "No data",
-                            subtitle: displaySourceName(healthDataManager.userPreferences?.sleep_source),
-                            icon: "bed.double",
-                            color: .purple
-                        )
+                        NavigationLink(destination: HealthChartsView(initialMetric: .sleep)) {
+                            QuickStatCard(
+                                title: "Sleep",
+                                value: healthDataManager.lastNightSleep > 0 ? formatSleepDuration(healthDataManager.lastNightSleep) : "No data",
+                                subtitle: displaySourceName(healthDataManager.userPreferences?.sleep_source),
+                                icon: "bed.double",
+                                color: .purple,
+                                action: nil
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .simultaneousGesture(TapGesture().onEnded {
+                            NSLog("🚨 CARD TAP DETECTED - Sleep card was pressed")
+                            print("🚨 === SLEEP CARD TAPPED ===")
+                            NSLog("🚨 === SLEEP CARD TAPPED ===")
+                            print("📊 Navigating to sleep detail in HealthChartsView...")
+                            NSLog("📊 Navigating to sleep detail in HealthChartsView...")
+                        })
                         
-                        QuickStatCard(
-                            title: "Heart Rate",
-                            value: healthDataManager.currentHeartRate > 0 ? "\(healthDataManager.currentHeartRate) BPM" : "No data",
-                            subtitle: displaySourceName(healthDataManager.userPreferences?.heart_health_source ?? healthDataManager.userPreferences?.activity_source),
-                            icon: "heart.fill",
-                            color: .red
-                        )
+                        NavigationLink(destination: HealthChartsView(initialMetric: .heartRate)) {
+                            QuickStatCard(
+                                title: "Heart Rate",
+                                value: healthDataManager.currentHeartRate > 0 ? "\(healthDataManager.currentHeartRate) BPM" : "No data",
+                                subtitle: displaySourceName(healthDataManager.userPreferences?.heart_health_source ?? healthDataManager.userPreferences?.activity_source),
+                                icon: "heart.fill",
+                                color: .red,
+                                action: nil
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .simultaneousGesture(TapGesture().onEnded {
+                            NSLog("🚨 CARD TAP DETECTED - Heart Rate card was pressed")
+                            print("🚨 === HEART RATE CARD TAPPED ===")
+                            NSLog("🚨 === HEART RATE CARD TAPPED ===")
+                            print("📊 Navigating to heart rate detail in HealthChartsView...")
+                            NSLog("📊 Navigating to heart rate detail in HealthChartsView...")
+                        })
                         
-                        QuickStatCard(
-                            title: "Calories",
-                            value: healthDataManager.todayActiveCalories > 0 ? "\(healthDataManager.todayActiveCalories) kcal" : "No data",
-                            subtitle: displaySourceName(healthDataManager.userPreferences?.activity_source),
-                            icon: "flame.fill",
-                            color: .orange
-                        )
+                        NavigationLink(destination: HealthChartsView(initialMetric: .activeEnergy)) {
+                            QuickStatCard(
+                                title: "Calories",
+                                value: healthDataManager.todayActiveCalories > 0 ? "\(healthDataManager.todayActiveCalories) kcal" : "No data",
+                                subtitle: displaySourceName(healthDataManager.userPreferences?.activity_source),
+                                icon: "flame.fill",
+                                color: .orange,
+                                action: nil
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .simultaneousGesture(TapGesture().onEnded {
+                            NSLog("🚨 CARD TAP DETECTED - Calories card was pressed")
+                            print("🚨 === CALORIES CARD TAPPED ===")
+                            NSLog("🚨 === CALORIES CARD TAPPED ===")
+                            print("📊 Navigating to calories detail in HealthChartsView...")
+                            NSLog("📊 Navigating to calories detail in HealthChartsView...")
+                        })
                     }
                     .padding(.horizontal)
                     
@@ -239,21 +283,64 @@ struct DashboardHomeView: View {
                                 }
                             )
                             
-                            QuickActionRow(
-                                icon: "chart.line.uptrend.xyaxis",
-                                title: "View Detailed Charts",
-                                action: {
-                                    // TODO: Navigate to charts view
+                            // Navigation Links for main features
+                            NavigationLink(destination: HealthChartsView()) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "chart.line.uptrend.xyaxis")
+                                        .foregroundColor(.blue)
+                                        .font(.title3)
+                                        .frame(width: 24)
+                                    
+                                    Text("View Detailed Charts")
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.secondary)
+                                        .font(.caption)
                                 }
-                            )
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .simultaneousGesture(TapGesture().onEnded {
+                                NSLog("🚨 NAVIGATION TAP DETECTED - View Detailed Charts navigation was pressed")
+                                print("🚨 === VIEW DETAILED CHARTS NAVIGATION TAPPED ===")
+                                NSLog("🚨 === VIEW DETAILED CHARTS NAVIGATION TAPPED ===")
+                                print("📊 Navigating to HealthChartsView...")
+                                NSLog("📊 Navigating to HealthChartsView...")
+                            })
                             
-                            QuickActionRow(
-                                icon: "person.2.fill",
-                                title: "Connected Apps",
-                                action: {
-                                    // TODO: Navigate to connected apps settings
+                            NavigationLink(destination: DataSourceSettingsView()) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "person.2.fill")
+                                        .foregroundColor(.blue)
+                                        .font(.title3)
+                                        .frame(width: 24)
+                                    
+                                    Text("Connected Apps")
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.secondary)
+                                        .font(.caption)
                                 }
-                            )
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .simultaneousGesture(TapGesture().onEnded {
+                                NSLog("🚨 NAVIGATION TAP DETECTED - Connected Apps navigation was pressed")
+                                print("🚨 === CONNECTED APPS NAVIGATION TAPPED ===")
+                                NSLog("🚨 === CONNECTED APPS NAVIGATION TAPPED ===")
+                                print("🔗 Navigating to DataSourceSettingsView...")
+                                NSLog("🔗 Navigating to DataSourceSettingsView...")
+                            })
                         }
                         .padding(.horizontal)
                     }
@@ -348,21 +435,28 @@ struct QuickStatCard: View {
     let subtitle: String
     let icon: String
     let color: Color
+    let action: (() -> Void)?
     
     var body: some View {
-        VStack(spacing: 8) {
+        let cardContent = VStack(spacing: 8) {
             HStack {
                 Image(systemName: icon)
                     .foregroundColor(color)
                     .font(.title2)
                 
                 Spacer()
+                
+                // Add visual indicator that card is tappable
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.secondary)
+                    .font(.caption)
             }
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(value)
                     .font(.title2)
                     .fontWeight(.bold)
+                    .foregroundColor(.primary)
                 
                 VStack(spacing: 2) {
                     Text(title)
@@ -380,6 +474,16 @@ struct QuickStatCard: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
+        
+        // Only apply onTapGesture if there's an action
+        if let action = action {
+            cardContent
+                .onTapGesture {
+                    action()
+                }
+        } else {
+            cardContent
+        }
     }
 }
 

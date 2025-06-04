@@ -12,6 +12,13 @@ struct HealthChartsView: View {
     @State private var isLoading = true
     @State private var showingMetricPicker = false
     
+    // MARK: - Initializers
+    
+    init(initialMetric: HealthMetric = .steps) {
+        // Use _selectedMetric to set the initial state
+        self._selectedMetric = State(initialValue: initialMetric)
+    }
+    
     enum TimeRange: String, CaseIterable {
         case day = "24H"
         case week = "7D"

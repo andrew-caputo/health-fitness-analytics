@@ -1,500 +1,294 @@
-# Health & Fitness Analytics Platform - Complete Project Summary & Phase 5 Implementation Plan
+# Health & Fitness Analytics Platform - Phase 5 Status & Comprehensive Mock Data Replacement Plan
 
-## 🏆 **PROJECT STATUS: PRODUCTION-READY PLATFORM - PHASE 5 IN PROGRESS**
+## 🚨 **CRITICAL DISCOVERY: EXTENSIVE MOCK DATA USAGE**
 
 **Date**: June 4, 2025  
-**Current Phase**: Phase 5 Week 1 Day 5 (iPhone Device Testing - Console Logging RESOLVED)  
-**GitHub Status**: Latest commits with console logging fixes - Complete success with device validation  
-**Overall Status**: ✅ **PHASE 5 WEEK 1 MAJOR MILESTONE COMPLETED - DEVICE TESTING OPERATIONAL**
+**Current Phase**: Phase 5 Week 1 Day 5 (Extended Device Testing)  
+**Major Status Change**: Critical Mock Data Analysis Complete  
+**Overall Status**: ⚠️ **MOCK DATA REPLACEMENT REQUIRED - COMPREHENSIVE PLAN IMPLEMENTED**
 
 ---
 
-## 🎯 **PROJECT OVERVIEW & ACHIEVEMENTS**
+## 🎯 **RECENT ACHIEVEMENTS & CRITICAL DISCOVERY**
 
-### **What We Built**
-The **Health & Fitness Analytics Platform** is a complete, production-ready health technology solution featuring:
+### **Dashboard Navigation Resolution ✅**
+Successfully resolved health metric card navigation issues that prevented users from accessing detailed charts.
 
-- 📱 **Professional iOS App**: SwiftUI application with complete HealthKit integration (15+ health data types)
-- 🔧 **Comprehensive Backend**: FastAPI server with 17+ AI-powered health intelligence endpoints
-- 🤖 **AI Health System**: Personalized insights, goal optimization, behavioral coaching, achievement engine
-- 🔐 **Secure Authentication**: Complete OAuth2 JWT authentication system working end-to-end
-- 📊 **Real-time Dashboard**: Live health metrics display and data synchronization
-- 🏆 **Gamification**: Achievement system with badges, streaks, and milestone celebrations
-- 🔒 **Privacy Controls**: Comprehensive data management and user privacy features
+#### **Problem Solved**:
+- **Issue**: Health cards showed console logs but failed to navigate to HealthChartsView
+- **Root Cause**: Gesture competition between `QuickStatCard.onTapGesture` and `NavigationLink`
+- **Solution**: Conditional gesture application and parameterized NavigationLink implementation
 
-### **Technical Excellence Achieved**
-- ✅ **Build Status**: 0 errors (resolved 115+ build errors to achieve production build)
-- ✅ **Authentication**: 100% working OAuth2 JWT flow from iOS to backend
-- ✅ **API Endpoints**: All 17+ AI endpoints operational and tested
-- ✅ **Database**: Optimized SQLite schema with proper health metrics storage
-- ✅ **Code Quality**: Professional MVVM architecture with clean, maintainable codebase
-- ✅ **Documentation**: Comprehensive memory bank system and setup guides
-- ✅ **Heart Health Data Source Selection**: **RESOLVED** - Critical issue fixed with comprehensive solution
+#### **Technical Implementation**:
+**Files Modified**:
+- `MainDashboardView.swift`: Updated NavigationLink calls with specific metrics
+- `HealthChartsView.swift`: Added `init(initialMetric: HealthMetric = .steps)` constructor
 
-### **Recent Major Achievements (June 3, 2025)**
-- **Heart Health Issue Resolution**: Comprehensive root cause analysis and dual fixes implemented
-- **iOS NetworkManager Fix**: Corrected API request format (form data → query parameters)
-- **Backend Connection Logic**: Apple Health now treated as inherently connected
-- **File Organization**: Renamed HealthKitManager.swift → HealthDataManager.swift for consistency
-- **End-to-End Validation**: User confirmed heart health data source selection working perfectly
+**Results**:
+- ✅ Steps card → Steps chart (correct metric displayed)
+- ✅ Sleep card → Sleep chart (correct metric displayed)  
+- ✅ Heart Rate card → Heart Rate chart (correct metric displayed)
+- ✅ Calories card → Active Energy chart (correct metric displayed)
 
----
+### **CRITICAL DISCOVERY: Systemic Mock Data Usage 🚨**
 
-## 📊 **CURRENT TECHNICAL STATE**
+#### **Investigation Trigger**:
+User reported HealthChartsView data and sources changed randomly despite Apple Health being configured for all data sources.
 
-### **iOS Application**
-```
-HealthDataHub/
-├── HealthDataHubApp.swift          # ✅ App entry point
-├── ContentView.swift               # ✅ Auth-aware root view  
-├── Managers/                       # ✅ Business logic
-│   ├── BackgroundSyncManager.swift # ✅ Automated data sync
-│   ├── HealthDataManager.swift      # ✅ Complete multi-source health data integration (HealthKit + API sources)
-│   └── NetworkManager.swift       # ✅ JWT auth & API communication
-├── Models/                         # ✅ Data models
-│   ├── AdvancedAIModels.swift      # ✅ Goals, achievements, coaching
-│   ├── ConnectedAppsModels.swift   # ✅ App integrations & permissions
-│   ├── GoalsModels.swift           # ✅ Progress tracking & predictions
-│   └── HealthDataMapper.swift      # ✅ HealthKit data serialization
-└── Views/                          # ✅ Feature-organized UI
-    ├── Authentication/             # ✅ Login/register flows
-    ├── Dashboard/                  # ✅ AI insights & health metrics
-    ├── Goals/                      # ✅ Progress tracking & management
-    ├── Health/                     # ✅ Charts, coaching, trends
-    ├── Achievements/               # ✅ Badges, streaks, celebrations
-    ├── Settings/                   # ✅ Privacy, sync, permissions
-    └── ViewModels/                 # ✅ MVVM architecture
-```
-
-**Status**: ✅ **Building successfully with 0 errors, tested in simulator**
-
-### **Backend API System**
-```python
-backend/
-├── main.py                    # ✅ FastAPI app with all routes
-├── api/v1/
-│   ├── auth.py               # ✅ JWT authentication endpoints
-│   ├── mobile/               # ✅ iOS-optimized endpoints
-│   └── ai/                   # ✅ 17 health intelligence endpoints
-├── core/
-│   ├── models.py            # ✅ Database models & schemas
-│   ├── auth.py              # ✅ JWT token management
-│   └── database.py          # ✅ SQLite with production schema
-└── services/                 # ✅ AI health analysis engines
-```
-
-**Status**: ✅ **Running locally on `localhost:8001`, all endpoints operational**
-
-### **Database Schema**
-```sql
-health_metrics (
-    user_id TEXT NOT NULL,           -- User isolation
-    timestamp DATETIME NOT NULL,     -- Fixed field mapping
-    data_source TEXT NOT NULL,       -- Fixed field mapping  
-    category TEXT NOT NULL,          -- Added category mapping
-    metric_type TEXT NOT NULL,
-    value REAL NOT NULL,
-    unit TEXT NOT NULL,
-    source_specific_data JSON        -- HealthKit metadata preservation
-)
-```
-
-**Status**: ✅ **Local SQLite operational with proper schema**
+#### **Comprehensive Analysis Results**:
+**SCOPE**: 10+ core files with extensive mock data systems throughout the entire application.
 
 ---
 
-## ✅ **COMPLETED: Phase 5 Week 1 Days 1-2**
+## 📊 **MOCK DATA INVENTORY - COMPLETE ANALYSIS**
 
-### **Local Development Setup - COMPLETED**
-- ✅ **Backend Configuration**: Local FastAPI server running with all AI engines operational
-- ✅ **Database Setup**: Local SQLite database with proper health metrics schema
-- ✅ **API Validation**: All 17+ endpoints tested and responding correctly
-- ✅ **iOS Simulator Testing**: Complete app functionality validated in Xcode simulator
-- ✅ **Authentication Testing**: OAuth2 JWT flow working end-to-end in simulator
-- ✅ **HealthKit Integration**: Simulator testing with mock health data successful
-- ✅ **AI Systems**: All health intelligence engines generating insights with test data
+### **Level 1: Core Data Systems (CRITICAL IMPACT)**
 
-### **✅ ADDITIONAL DISCOVERY: Data Source Preferences API Already Implemented**
-- ✅ **API Endpoints**: Complete preferences API already exists in `/api/v1/preferences/`
-- ✅ **Database Schema**: Data source capabilities table populated with 9 sources
-- ✅ **Available Sources**: Withings, Apple Health, CSV, Oura, MyFitnessPal, Fitbit, Strava, WHOOP, Cronometer
-- ✅ **Category Support**: Proper categorization (activity: 8 sources, sleep: 6, nutrition: 4, body_composition: 6)
-- ✅ **Integration Types**: OAuth2, file upload, and API integrations properly configured
-- ✅ **Endpoint Testing**: All preference endpoints responding correctly with authentication
+#### **1. HealthDataManager.swift** (Lines 1066-1225)
+- **Issue**: ALL backend data sources use `Int.random()` and `Double.random()`
+- **Impact**: Dashboard "real" data is actually randomly generated
+- **Sources Affected**: Withings, Oura, Fitbit, WHOOP, Strava, FatSecret
+- **Example Code**: 
+  ```swift
+  let withingsSteps = Int.random(in: 6000...8000)
+  let ouraHeartRate = Int.random(in: 60...70)
+  ```
 
-### **Quick Start Commands**
-```bash
-# Backend (Terminal 1)
-cd backend
-uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+#### **2. HealthChartsView.swift** (Lines 379-410)
+- **Issue**: `generateMockData()` creates fake historical data with random values
+- **Impact**: Charts show random data that changes on each view
+- **Fake Sources**: `["Apple Watch", "MyFitnessPal", "Strava", "Sleep Cycle"]`
+- **Problem**: Completely ignores user's Apple Health preference
 
-# iOS (Terminal 2) 
-cd ios-app/HealthDataHub
-open HealthDataHub.xcodeproj
-# Build and run in simulator
+### **Level 2: Dashboard & AI Systems (HIGH IMPACT)**
 
-# Test Login: test@healthanalytics.com / testpassword123
+#### **3. AIInsightsDashboardView.swift** (Lines 620-740)
+- **Issue**: All AI insights, health scores, recommendations are fabricated
+- **Impact**: Users receive fake health analysis and advice
+- **Mock Systems**: Health scores, correlations, anomalies, recommendations
+- **Backend Ignored**: Does not use existing AI endpoints on `localhost:8001`
 
-# Test Available Sources (No Auth Required)
-curl -X GET "http://localhost:8001/api/v1/preferences/available-sources"
+#### **4. AchievementsViewModel.swift** (Lines 120-220)
+- **Issue**: `loadMockData()` generates fake achievements and streaks
+- **Impact**: Users see fabricated progress and milestones
+- **Fake Data**: Hardcoded completion dates, progress values, badge levels
 
-# Test User Preferences (Auth Required)
-TOKEN=$(curl -s -X POST "http://localhost:8001/api/v1/auth/login" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=test@healthanalytics.com&password=testpassword123&grant_type=password" \
-  | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
+### **Level 3: Goals & Coaching (MEDIUM IMPACT)**
 
-curl -X GET "http://localhost:8001/api/v1/preferences/" \
-  -H "Authorization: Bearer $TOKEN"
+#### **5. PersonalizedGoalsView.swift** (Line 602)
+- **Issue**: `createMockProgressData()` with `Double.random()` progress values
+- **Impact**: Goal tracking shows random, unrealistic progress
 
-curl -X GET "http://localhost:8001/api/v1/preferences/category/activity/sources" \
-  -H "Authorization: Bearer $TOKEN"
-```
+#### **6. GoalProgressViewModel.swift** (Lines 140-227)
+- **Issue**: Mock goals data and connected data sources
+- **Impact**: Goal management uses completely fabricated data
 
-**Result**: ✅ **Local development environment fully operational and validated + Data Source API ready**
+#### **7. HealthCoachViewModel.swift** (Line 53)
+- **Issue**: `loadMockData()` for coaching recommendations
+- **Impact**: Health coaching advice is entirely fabricated
 
----
+### **Level 4: Settings & Configuration (LOW IMPACT)**
 
-## 🎯 **REVISED FOCUS: Phase 5 Week 1 Days 3-7 Implementation**
+#### **8. SyncSettingsView.swift** (Lines 190-220)
+- **Issue**: `mockDataSources` for sync priority testing
+- **Impact**: Sync settings may not reflect real configurations
 
-### **🚀 ACCELERATED PRIORITY: iOS Integration Only**
+#### **9. TrendsAnalysisView.swift** (Line 362)
+- **Issue**: `Double.random(in: -10...10)` for trend variations
+- **Impact**: Trend analysis includes random noise
 
-Since the backend data source preferences API is **already complete and working**, we can skip backend implementation entirely and focus on iOS integration.
-
-### **UPDATED Day 3-4: iOS Data Source Integration**
-
-#### **✅ Backend Status - ALREADY COMPLETE**
-The following backend components are **already implemented and tested**:
-
-1. **✅ Database Schema**: `user_data_source_preferences` table exists
-2. **✅ API Endpoints**: Complete set of endpoints working:
-   ```
-   GET    /api/v1/preferences/                          # Get user preferences
-   POST   /api/v1/preferences/                          # Create preferences  
-   PUT    /api/v1/preferences/                          # Update preferences
-   DELETE /api/v1/preferences/                          # Delete preferences
-   GET    /api/v1/preferences/available-sources         # List all sources
-   GET    /api/v1/preferences/category/{category}/sources # Category sources
-   POST   /api/v1/preferences/category/{category}/set-preferred # Set preferred
-   ```
-
-3. **✅ Data Sources**: 9 sources configured with capabilities:
-   - **Activity (8 sources)**: Withings, Apple Health, CSV, Oura, MyFitnessPal, Fitbit, Strava, WHOOP
-   - **Sleep (6 sources)**: Withings, Apple Health, CSV, Oura, Fitbit, WHOOP  
-   - **Nutrition (4 sources)**: Apple Health, CSV, MyFitnessPal, Cronometer
-   - **Body Composition (6 sources)**: Withings, Apple Health, CSV, Fitbit, WHOOP, Cronometer
-
-#### **Day 3: iOS Models & Network Integration (6-8 hours)**
-
-1. **New Models & Data Structures**
-   ```swift
-   // Add to Models/DataSourceModels.swift
-   enum HealthCategory: String, CaseIterable {
-       case activity = "activity"
-       case bodyComposition = "body_composition"
-       case nutrition = "nutrition"
-       case sleep = "sleep"
-       case heart = "heart"
-       case workouts = "workouts"
-       
-       var displayName: String {
-           switch self {
-           case .activity: return "Activity"
-           case .bodyComposition: return "Body Composition"
-           case .nutrition: return "Nutrition"
-           case .sleep: return "Sleep"
-           case .heart: return "Heart Rate"
-           case .workouts: return "Workouts"
-           }
-       }
-   }
-   
-   struct DataSource: Codable, Identifiable {
-       let id = UUID()
-       let source_name: String
-       let display_name: String
-       let supports_activity: Bool
-       let supports_sleep: Bool
-       let supports_nutrition: Bool
-       let supports_body_composition: Bool
-       let integration_type: String
-       let is_active: Bool
-   }
-   
-   struct CategorySourceInfo: Codable {
-       let category: String
-       let preferred_source: String?
-       let connected_sources: [String]
-       let available_sources: [AvailableSource]
-   }
-   
-   struct AvailableSource: Codable {
-       let source_name: String
-       let display_name: String
-       let integration_type: String
-       let is_connected: Bool
-   }
-   
-   struct UserPreferencesResponse: Codable {
-       let preferences: UserDataSourcePreferences?
-       let available_sources: [DataSource]
-       let connected_sources: [String]
-   }
-   
-   struct UserDataSourcePreferences: Codable {
-       let activity_source: String?
-       let sleep_source: String?
-       let nutrition_source: String?
-       let body_composition_source: String?
-   }
-   ```
-
-2. **NetworkManager Enhancement**
-   ```swift
-   // Add to Managers/NetworkManager.swift
-   
-   // MARK: - Data Source Preferences Methods
-   
-   func getAvailableDataSources() async throws -> [DataSource] {
-       let response: [DataSource] = try await request(
-           endpoint: "/preferences/available-sources",
-           method: .GET
-       )
-       return response
-   }
-   
-   func getUserDataSourcePreferences() async throws -> UserPreferencesResponse {
-       let response: UserPreferencesResponse = try await request(
-           endpoint: "/preferences/",
-           method: .GET
-       )
-       return response
-   }
-   
-   func getCategorySourceInfo(category: HealthCategory) async throws -> CategorySourceInfo {
-       let response: CategorySourceInfo = try await request(
-           endpoint: "/preferences/category/\(category.rawValue)/sources",
-           method: .GET
-       )
-       return response
-   }
-   
-   func setPreferredSourceForCategory(category: HealthCategory, sourceName: String) async throws {
-       let formData = ["source_name": sourceName]
-       let _: EmptyResponse = try await performFormRequest(
-           endpoint: "/preferences/category/\(category.rawValue)/set-preferred",
-           formData: formData
-       )
-   }
-   
-   struct EmptyResponse: Codable {}
-   ```
-
-#### **Day 4: iOS UI Implementation (6-8 hours) - EXTENDED & REFINED**
-
-1.  **Onboarding Flow Enhancement - COMPLETED & VALIDATED**
-    *   `DataSourceSelectionView.swift` was created and integrated.
-    *   **User Validation**: Successfully tested by the user (test15) who completed data source selection and reached the main dashboard. New user registration (`test14`) with onboarding skip also validated.
-    *   **Known Issue**: `setsockopt SO_NOWAKEFROMSLEEP` errors observed in logs during testing, but core functionality remained unaffected.
-
-2.  **Settings Integration - COMPLETED & REFINED**
-    *   `DataSourceSettingsView.swift` implemented to allow users to manage data source preferences post-onboarding.
-    *   **Refactoring**: Key UI components (`CategorySourceDetailView` struct, `AvailableDataSourceRow` struct, and related extensions) were extracted from `DataSourceSettingsView.swift` into a new, dedicated file: `Views/Settings/CategorySourceDetailView.swift` to improve modularity and reusability.
-    *   `DataSourceSettingsView.swift` was updated to use this new shared view.
-    *   ViewModel (`DataSourceSettingsViewModel` within `DataSourceSelectionViewModel.swift`) usage confirmed.
-
-3.  **ViewModels (`DataSourceSelectionViewModel.swift` including `DataSourceSettingsViewModel`) - REVIEWED & UTILIZED**
-    *   Existing ViewModels were leveraged for both the onboarding selection and the settings view.
-    *   `DataSourceSettingsViewModel` correctly drives `DataSourceSettingsView`.
-
-### **REVISED IMPLEMENTATION SCHEDULE**
-
-#### **Day 3: iOS Models & Network Integration - COMPLETED**
-**Full Day (6-8 hours)**:
-1.  ✅ **Skip Backend** - Already complete and tested
-2.  ✅ **Create iOS Models** - Data source models, preferences structures
-3.  ✅ **Enhance NetworkManager** - Methods to call existing API endpoints
-4.  ✅ **Basic UI Components** - Category icons, source selection components (`CategorySelectionCard`, `SourcePickerView`, `SourceRow`)
-5.  ✅ **Test in Simulator** - Verified API calls work from iOS, initial UI components render
-
-#### **Day 4: iOS UI Implementation & Refinement - COMPLETED**
-**Full Day (6-8 hours)**:
-1.  ✅ **Complete `DataSourceSelectionView`** - Onboarding source selection.
-2.  ✅ **Integrate into Auth Flow** - Added to login sequence for new users in `ContentView.swift`.
-3.  ✅ **Create and Refine `DataSourceSettingsView`**:
-    *   Initial implementation of settings view.
-    *   Refactored by creating `CategorySourceDetailView.swift` for modularity.
-4.  ✅ **Add ViewModels** - Business logic for data source management (`DataSourceSelectionViewModel`, `DataSourceSettingsViewModel`).
-5.  ✅ **Test Core Flow** - Onboarding and navigation to dashboard successfully user-tested.
-    *   **Known Issue**: `setsockopt SO_NOWAKEFROMSLEEP` errors present in logs.
-
-#### **Days 5-7: Real iPhone Device Testing & Settings Validation**
-**Now with Complete Data Source Selection & Settings Views**:
-
-**Day 5 (Focus)**: iPhone deployment, validation of refactored Settings views, and initial real data testing.
-*   Deploy iOS app to iPhone with complete onboarding flow and refactored settings views.
-*   **Thoroughly test `DataSourceSettingsView.swift` and `CategorySourceDetailView.swift`**:
-    *   Navigate to Data Sources in Settings.
-    *   Verify each category links to the detail view.
-    *   Test changing preferred sources and ensure persistence.
-*   Test data source selection with real backend integration.
-*   Configure user preferences through the working UI (both onboarding and settings).
-*   Validate backend properly stores and retrieves preferences from both flows.
-*   Continue monitoring `setsockopt` errors.
-
-**Day 6-7**: Real data integration and validation (as originally planned)
-*   Test switching between different data sources in settings.
-*   Validate data flow respects user-selected preferences.
-*   Test the complete user journey from onboarding to daily use with various preference configurations.
-*   Monitor performance and user experience with real data.
+#### **10. AdvancedAIModels.swift** (Line 530)
+- **Issue**: Mock history data generation for AI models
+- **Impact**: AI model training/analysis uses fake historical data
 
 ---
 
-## 🎯 **UPDATED SUCCESS METRICS**
+## 🛠️ **COMPREHENSIVE MOCK DATA REPLACEMENT PLAN**
 
-### **Day 3 Success Criteria - ACHIEVED**
-*   ✅ iOS models properly represent API data structures
-*   ✅ NetworkManager successfully calls all preference endpoints
-*   ✅ Basic UI components render data from API
-*   ✅ Simulator testing shows successful API integration
+### **Phase 1: Core Data Foundation (Priority 1)**
+**Timeline**: Week 1  
+**Target**: Replace mock data with real HealthKit + Backend integration  
+**Status**: Ready to implement
 
-### **Day 4 Success Criteria - ACHIEVED & EXPANDED**
-*   ✅ Complete onboarding flow with data source selection implemented and user-validated.
-*   ✅ Settings view (`DataSourceSettingsView`) allows navigation to change data source preferences.
-*   ✅ `DataSourceSettingsView` refactored for improved modularity with `CategorySourceDetailView`.
-*   ✅ All UI interactions (onboarding) properly update backend via API, confirmed by user testing.
-*   ✅ Navigation flow for onboarding works seamlessly in simulator, confirmed by user testing.
-*   ❗ `setsockopt SO_NOWAKEFROMSLEEP` errors noted as a persistent but non-breaking issue.
+#### **1.1 HealthDataManager Overhaul**
+- **File**: `HealthDataManager.swift` (Lines 1066-1225)
+- **Action**: Replace ALL `Int.random()` and `Double.random()` calls
+- **Implementation**: Use actual HealthKit query results for all data sources
+- **Validation**: Verify real health data flows correctly to dashboard
+- **Expected Outcome**: Dashboard shows consistent, real health metrics
 
-### **Day 5-7 Success Criteria (Revised Focus for Day 5)**
-*   ✅ **(Day 5)** `DataSourceSettingsView` and `CategorySourceDetailView` function correctly on a real device: navigation, display of current preferences, ability to change and save preferences.
-*   ✅ Real device testing with complete data source selection (onboarding and settings).
-*   ✅ User preferences persist correctly in backend when set via onboarding or settings.
-*   ✅ Settings changes immediately reflect in app behavior (e.g., if an AI insight depends on a preferred source).
-*   ✅ Performance acceptable for daily use.
-*   ✅ User experience smooth and intuitive for both onboarding and settings management.
+#### **1.2 HealthChartsView Real Data Integration**
+- **File**: `HealthChartsView.swift` (Lines 379-410)
+- **Action**: Replace `generateMockData()` with real data integration
+- **Implementation**: 
+  - Connect to HealthDataManager actual data properties
+  - Use real historical data from HealthKit queries
+  - Generate realistic historical projections based on current real values
+- **Source Attribution**: Use user's actual data source preferences (Apple Health)
 
-### **Week 1 Overall Success**
-- ✅ Complete local development environment validated
-- ✅ **Backend data source API complete and tested** ✨
-- ✅ iOS integration with working backend preferences
-- ✅ Real iPhone device testing successful with user-controlled sources
-- ✅ Platform ready for extended real-world usage testing
+#### **1.3 Data Pipeline Validation**
+- **Flow**: HealthKit → HealthDataManager → Dashboard → Charts
+- **Validation**: Ensure data consistency across all views
+- **User Preferences**: Respect configured data sources throughout application
+
+### **Phase 2: Dashboard Integration (Priority 2)**
+**Timeline**: Week 2  
+**Target**: Connect dashboard views to real data and backend AI
+
+#### **2.1 AI Insights Backend Integration**
+- **File**: `AIInsightsDashboardView.swift` (Lines 620-740)
+- **Action**: Replace ALL mock insights with backend AI analysis API calls
+- **Backend**: Utilize existing AI endpoints on `localhost:8001`
+- **Implementation**: Real insights generated from actual health data
+- **Features**: Health scores, correlations, anomalies, recommendations
+
+#### **2.2 Dashboard Data Consistency**
+- **Target**: Same real data across dashboard cards and detail views
+- **Implementation**: Single source of truth from HealthDataManager
+- **User Preferences**: Ensure all views respect data source selections
+- **Validation**: No data discrepancies between dashboard and detail views
+
+### **Phase 3: Secondary Features (Priority 3)**
+**Timeline**: Week 3  
+**Target**: Replace remaining mock systems with backend integration
+
+#### **3.1 Achievements System**
+- **File**: `AchievementsViewModel.swift` (Lines 120-220)
+- **Action**: Connect to backend achievements API
+- **Implementation**: Real achievement tracking based on actual health progress
+- **Backend**: Use existing achievements endpoints
+
+#### **3.2 Goals Management**
+- **Files**: `PersonalizedGoalsView.swift`, `GoalProgressViewModel.swift`
+- **Action**: Real goal tracking with actual progress data
+- **Integration**: Connect to goals backend endpoints
+- **Features**: Real progress tracking, realistic goal adjustments
+
+#### **3.3 Health Coaching**
+- **File**: `HealthCoachViewModel.swift` (Line 53)
+- **Action**: Real coaching based on actual health patterns
+- **Backend**: Use AI coaching endpoints with real data analysis
+- **Implementation**: Personalized recommendations based on user's actual health data
+
+### **Phase 4: Data Quality & Validation (Priority 4)**
+**Timeline**: Week 4  
+**Target**: Ensure data accuracy and optimal user experience
+
+#### **4.1 Data Validation**
+- **Action**: Verify real data matches expected ranges and patterns
+- **Testing**: Compare HealthKit data with backend analysis results
+- **Quality Assurance**: Ensure data accuracy and consistency across all systems
+
+#### **4.2 Performance Optimization**
+- **Action**: Optimize real data loading and caching strategies
+- **Implementation**: Efficient data fetching and storage mechanisms
+- **User Experience**: Fast loading times without sacrificing data accuracy
+
+#### **4.3 Error Handling & Reliability**
+- **Action**: Implement graceful fallbacks when real data unavailable
+- **Implementation**: Proper error states and user feedback systems
+- **Reliability**: Robust system that handles data unavailability scenarios
 
 ---
 
-## 🚀 **FUTURE PHASES PREVIEW**
+## 🔧 **CURRENT TECHNICAL STATE**
 
-### **Week 2: Enhancement & Polish**
-- Bug fixes and optimization based on real device testing
-- Enhanced user experience and AI coaching improvements
-- Core social features (sharing, achievements, celebrations)
+### **What's Working ✅**
+- Dashboard navigation to HealthChartsView with correct metrics
+- Console logging on real iPhone device for debugging
+- HealthKit integration and real data reading capabilities
+- User preferences API and data source selection functionality
+- Authentication and backend connectivity (OAuth2 JWT)
+- Real health data values available in HealthDataManager properties
+- Backend AI endpoints operational on `localhost:8001`
 
-### **Week 3: Production Deployment**
-- Cloud backend deployment (production environment)
-- iOS TestFlight setup for broader testing
-- Production data source OAuth credentials setup
+### **What Requires Immediate Attention ❌**
+- ALL chart data and insights are randomly generated mock data
+- User's data source preferences (Apple Health) ignored in favor of hardcoded fake sources
+- Data changes randomly on each view due to `Double.random()` and `Int.random()` usage
+- AI insights and recommendations are completely fabricated
+- Achievements and goals use fake progress data
+- No connection between real HealthKit data and displayed charts/insights
 
-### **Week 4: Launch Preparation**
-- Performance optimization and subscription model
-- App Store submission preparation
-- Marketing materials and user documentation
-
----
-
-## 💡 **CURRENT PRIORITIES**
-
-### **Immediate Next Steps (This Week)**
-1. **Today**: Implement backend data source preferences system
-2. **Tomorrow**: Complete iOS data source selection UI and onboarding
-3. **Day 3**: Deploy to iPhone and test with real data source selection
-4. **Day 4**: Validate real health data with user-controlled sources
-5. **Day 5**: Extended real-world usage testing and optimization
-
-### **Key Decision Points**
-- **Data Source Priority**: Users have complete control over which apps provide each type of health data
-- **Flexibility**: Easy to change sources when users get new devices or apps
-- **Fallback Logic**: Backup sources ensure data availability if primary source fails
-- **User Experience**: Intuitive onboarding that respects user's actual health tracking setup
-
----
-
-## 🔧 **DEVELOPMENT ENVIRONMENT**
-
-### **Current Setup**
-- **Backend**: Running on `localhost:8001` with all endpoints operational
-- **iOS**: Building successfully in Xcode with 0 errors
+### **Development Environment Status**
+- **Backend**: Running on `localhost:8001` with all AI endpoints operational
+- **iOS**: Building successfully with 0 errors, real device testing confirmed
 - **Database**: Local SQLite with production-ready schema
-- **Authentication**: Complete OAuth2 JWT flow working
-- **Testing**: Simulator validation complete, ready for device testing
-
-### **Required for Next Steps**
-- **iPhone Device**: For real HealthKit data testing
-- **Network**: Stable WiFi for local backend connection during device testing
-- **Health Apps**: Access to actual health tracking apps/devices for source selection testing
-
-### **Quick Commands Reference**
-```bash
-# Start backend server
-cd backend && uvicorn main:app --host 0.0.0.0 --port 8001 --reload
-
-# Open iOS project
-cd ios-app/HealthDataHub && open HealthDataHub.xcodeproj
-
-# Test authentication endpoint
-curl -X POST "http://localhost:8001/api/v1/auth/login" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=test@healthanalytics.com&password=testpassword123&grant_type=password"
-
-# Check server health
-curl -X GET "http://localhost:8001/health"
-```
+- **Authentication**: Complete OAuth2 JWT flow working end-to-end
+- **Test User**: `test@healthanalytics.com` / `testpassword123`
+- **User Preferences**: All categories correctly set to Apple Health
 
 ---
 
-## 📚 **DOCUMENTATION STATUS**
+## 📈 **SUCCESS METRICS & VALIDATION CRITERIA**
 
-### **Completed Documentation**
-- ✅ **README.md**: Comprehensive setup guide and project overview
-- ✅ **activeContext.md**: Current status and recent achievements
-- ✅ **progress.md**: Complete development history and milestones
-- ✅ **PROJECT_COMPLETION_SUMMARY.md**: Official completion documentation
-- ✅ **PHASE_5_CURRENT_STATUS_AND_PLAN.md**: This comprehensive plan document
+### **Phase 1 Success Criteria**
+- ✅ Dashboard shows consistent real health data (no random changes)
+- ✅ Charts display actual HealthKit values with proper source attribution
+- ✅ Data doesn't change randomly on navigation between views
+- ✅ User preferences (Apple Health) are respected throughout application
+- ✅ Real historical trends based on actual data patterns
 
-### **Memory Bank Organization**
-```
-memory-bank/
-├── projectbrief.md                    # Original project scope and goals
-├── productContext.md                  # Product vision and user experience
-├── systemPatterns.md                  # Technical architecture patterns
-├── techContext.md                     # Technology stack and decisions
-├── activeContext.md                   # Current status and immediate context
-├── progress.md                        # Complete development history
-├── PROJECT_COMPLETION_SUMMARY.md      # Official completion documentation
-├── PHASE_5_CURRENT_STATUS_AND_PLAN.md # Current comprehensive plan
-└── phase5-plan.md                     # Original Phase 5 implementation plan
-```
+### **Phase 2 Success Criteria**
+- ✅ AI insights generated from real health data via backend API
+- ✅ Health scores reflect actual user health patterns
+- ✅ Recommendations based on real data analysis
+- ✅ Complete data consistency across all dashboard views
+
+### **Phase 3 Success Criteria**
+- ✅ Achievements based on real health progress
+- ✅ Goals reflect actual user capabilities and progress
+- ✅ Health coaching recommendations personalized to real data
+- ✅ All secondary features use real backend integration
+
+### **Phase 4 Success Criteria**
+- ✅ Optimal performance with real data loading
+- ✅ Reliable error handling and fallback systems
+- ✅ Production-ready data quality and validation
+- ✅ User experience optimized for real-world usage
 
 ---
 
-## 🏆 **PROJECT CONFIDENCE LEVEL**
+## 🚀 **IMMEDIATE NEXT ACTIONS**
 
-### **Technical Readiness: 95%**
-- All core systems operational and tested
-- Professional architecture with clean codebase
-- Comprehensive documentation and setup guides
-- Ready for real-world device testing
+### **Ready to Implement (Phase 1)**
+1. **HealthDataManager.swift**: Remove ALL random data generation (Lines 1066-1225)
+2. **HealthChartsView.swift**: Connect to real HealthDataManager data (Lines 379-410)
+3. **Data Source Attribution**: Use actual user preferences instead of hardcoded sources
+4. **Real Data Pipeline**: Validate HealthKit → Dashboard → Charts data flow
+5. **Testing**: Confirm data consistency and user preference respect
 
-### **Market Readiness: 80%**
-- Core features complete and validated
-- User experience needs real-device validation
-- Data source selection enhancement in progress
-- Production deployment pathway clear
+### **Technical Implementation Strategy**
+- **Phased Approach**: Incremental replacement to maintain application stability
+- **Core-First**: Establish data foundation before expanding to UI features
+- **Backend Integration**: Leverage existing AI endpoints and database schema
+- **User-Centric**: Honor configured data sources and preferences throughout
 
-### **Business Readiness: 70%**
-- Technical foundation excellent
-- User experience validation needed
-- Monetization strategy defined
-- Launch preparation pathway established
+### **Risk Mitigation**
+- **Incremental Testing**: Validate each phase before proceeding to next
+- **Backup Strategy**: Maintain mock data fallbacks during transition
+- **User Experience**: Ensure no functionality regression during replacement
+- **Performance Monitoring**: Track loading times and data accuracy throughout process
 
-**The platform is excellently positioned to implement user-controlled data source selection and then move to real-world iPhone validation, representing the critical bridge between technical achievement and market readiness.** 
+---
+
+## 💡 **ARCHITECTURAL DECISIONS**
+
+### **Navigation Implementation**
+- ✅ **NavigationLink with Parameters**: Chosen over complex state management
+- ✅ **Gesture Management**: Conditional application to prevent UI conflicts
+- ✅ **Metric-Specific Views**: Parameterized constructors for chart customization
+
+### **Data Integration Strategy**
+- ✅ **Real Backend Integration**: Utilize existing AI endpoints and infrastructure
+- ✅ **User Preference Respect**: Honor all configured data sources
+- ✅ **Single Source of Truth**: HealthDataManager as central data coordinator
+- ✅ **Performance-First**: Optimized data loading and caching strategies
+
+---
+
+**This comprehensive plan addresses the critical discovery of extensive mock data usage throughout the application and provides a structured approach to replace all mock systems with real data integration, ensuring the platform delivers genuine health insights and analysis to users.**
+
+---
+
+*Last updated: June 4, 2025 - Post comprehensive mock data discovery and dashboard navigation resolution* 
