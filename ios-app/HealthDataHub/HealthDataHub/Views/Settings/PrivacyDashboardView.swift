@@ -644,10 +644,7 @@ struct PrivacyAuditLog: Identifiable {
 
 // MARK: - Preview
 
-struct PrivacyDashboardView_Previews: PreviewProvider {
-    static var previews: some View {
-        PrivacyDashboardView()
-            .environmentObject(HealthDataManager())
-            .environmentObject(NetworkManager.shared)
-    }
+#Preview {
+    PrivacyDashboardView()
+        .environmentObject(HealthDataManager.shared)
 } 

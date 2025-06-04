@@ -578,10 +578,7 @@ enum TrendDirection: String {
 
 // MARK: - Preview
 
-struct TrendsAnalysisView_Previews: PreviewProvider {
-    static var previews: some View {
-        TrendsAnalysisView()
-            .environmentObject(HealthDataManager())
-            .environmentObject(NetworkManager.shared)
-    }
+#Preview {
+    TrendsAnalysisView()
+        .environmentObject(HealthDataManager.shared)
 } 

@@ -105,25 +105,49 @@ class NetworkManager: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         
-        let formString = formData.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
+        // Properly URL encode the form data
+        let formString = formData.compactMap { key, value in
+            guard let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let encodedValue = value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                return nil
+            }
+            return "\(encodedKey)=\(encodedValue)"
+        }.joined(separator: "&")
+        
         request.httpBody = formString.data(using: .utf8)
         
-        let (data, response) = try await session.data(for: request)
+        print("🔐 Making login request to: \(url)")
+        print("🔐 Form data: \(formString)")
         
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw NetworkError.invalidResponse
-        }
-        
-        guard 200...299 ~= httpResponse.statusCode else {
-            // Try to extract error message from response
-            if let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let detail = errorData["detail"] as? String {
+        do {
+            let (data, response) = try await session.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ Invalid response type")
+                throw NetworkError.invalidResponse
+            }
+            
+            print("🔐 Login response status: \(httpResponse.statusCode)")
+            
+            guard 200...299 ~= httpResponse.statusCode else {
+                // Try to extract error message from response
+                if let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let detail = errorData["detail"] as? String {
+                    print("❌ API Error: \(detail)")
+                    throw NetworkError.httpError(httpResponse.statusCode)
+                }
+                print("❌ HTTP Error: \(httpResponse.statusCode)")
                 throw NetworkError.httpError(httpResponse.statusCode)
             }
-            throw NetworkError.httpError(httpResponse.statusCode)
+            
+            let responseString = String(data: data, encoding: .utf8) ?? "Invalid UTF-8"
+            print("✅ Login response: \(responseString)")
+            
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch {
+            print("❌ Network request failed for \(endpoint): \(error)")
+            throw error
         }
-        
-        return try JSONDecoder().decode(T.self, from: data)
     }
     
     // MARK: - Authentication Methods

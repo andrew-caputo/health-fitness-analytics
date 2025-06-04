@@ -492,10 +492,7 @@ struct DataSourceRow: View {
 
 // MARK: - Preview
 
-struct DataSourcePriorityView_Previews: PreviewProvider {
-    static var previews: some View {
-        DataSourcePriorityView()
-            .environmentObject(HealthDataManager())
-            .environmentObject(NetworkManager.shared)
-    }
+#Preview {
+    DataSourcePriorityView()
+        .environmentObject(HealthDataManager.shared)
 } 

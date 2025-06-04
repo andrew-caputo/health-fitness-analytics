@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MainDashboardView: View {
     @StateObject private var networkManager = NetworkManager.shared
-    @StateObject private var healthDataManager = HealthDataManager()
+    @StateObject private var healthDataManager = HealthDataManager.shared
     @StateObject private var viewModel = MainDashboardViewModel()
     @State private var selectedTab = 0
     @State private var isSettingsPresented = false
@@ -74,7 +74,13 @@ struct MainDashboardView: View {
 // MARK: - Dashboard Home View
 
 struct DashboardHomeView: View {
-    @StateObject private var healthDataManager = HealthDataManager()
+    @StateObject private var healthDataManager = HealthDataManager.shared
+    
+    init() {
+        print("🏠 === DashboardHomeView INITIALIZED ===")
+        print("🏠 This confirms updated code is running")
+        NSLog("🏠 NSLOG: DashboardHomeView initialized - this should appear in console")
+    }
     
     var body: some View {
         NavigationView {
@@ -127,7 +133,7 @@ struct DashboardHomeView: View {
                         QuickStatCard(
                             title: "Today's Steps",
                             value: healthDataManager.todaySteps > 0 ? "\(healthDataManager.todaySteps)" : "No data",
-                            subtitle: healthDataManager.userPreferences?.activity_source ?? "Apple Health",
+                            subtitle: displaySourceName(healthDataManager.userPreferences?.activity_source),
                             icon: "figure.walk",
                             color: .blue
                         )
@@ -135,7 +141,7 @@ struct DashboardHomeView: View {
                         QuickStatCard(
                             title: "Sleep",
                             value: healthDataManager.lastNightSleep > 0 ? formatSleepDuration(healthDataManager.lastNightSleep) : "No data",
-                            subtitle: healthDataManager.userPreferences?.sleep_source ?? "Apple Health",
+                            subtitle: displaySourceName(healthDataManager.userPreferences?.sleep_source),
                             icon: "bed.double",
                             color: .purple
                         )
@@ -143,7 +149,7 @@ struct DashboardHomeView: View {
                         QuickStatCard(
                             title: "Heart Rate",
                             value: healthDataManager.currentHeartRate > 0 ? "\(healthDataManager.currentHeartRate) BPM" : "No data",
-                            subtitle: healthDataManager.userPreferences?.activity_source ?? "Apple Health",
+                            subtitle: displaySourceName(healthDataManager.userPreferences?.heart_health_source ?? healthDataManager.userPreferences?.activity_source),
                             icon: "heart.fill",
                             color: .red
                         )
@@ -151,7 +157,7 @@ struct DashboardHomeView: View {
                         QuickStatCard(
                             title: "Calories",
                             value: healthDataManager.todayActiveCalories > 0 ? "\(healthDataManager.todayActiveCalories) kcal" : "No data",
-                            subtitle: healthDataManager.userPreferences?.activity_source ?? "Apple Health",
+                            subtitle: displaySourceName(healthDataManager.userPreferences?.activity_source),
                             icon: "flame.fill",
                             color: .orange
                         )
@@ -169,6 +175,24 @@ struct DashboardHomeView: View {
                                 icon: "arrow.clockwise",
                                 title: "Sync Health Data",
                                 action: {
+                                    print("🔄 === SYNC BUTTON TAPPED ===")
+                                    print("🔄 Manual sync triggered from dashboard")
+                                    print("🔄 Auth status before sync: \(healthDataManager.isAuthorized)")
+                                    healthDataManager.syncLatestData()
+                                }
+                            )
+                            
+                            QuickActionRow(
+                                icon: "stethoscope",
+                                title: "Debug Data Flow",
+                                action: {
+                                    print("🔍 === DEBUG BUTTON TAPPED ===")
+                                    print("🔍 === MANUAL DEBUG SYNC TRIGGERED ===")
+                                    print("🔍 Authorization status: \(healthDataManager.isAuthorized)")
+                                    print("🔍 Current sync status: \(healthDataManager.syncStatus)")
+                                    print("🔍 Current user preferences: \(String(describing: healthDataManager.userPreferences))")
+                                    print("🔍 Current data values - Steps: \(healthDataManager.todaySteps), Calories: \(healthDataManager.todayActiveCalories), HR: \(healthDataManager.currentHeartRate), Sleep: \(healthDataManager.lastNightSleep)")
+                                    print("🔍 About to call syncLatestData()...")
                                     healthDataManager.syncLatestData()
                                 }
                             )
@@ -201,9 +225,47 @@ struct DashboardHomeView: View {
             }
         }
         .onAppear {
+            print("🚀 DashboardHomeView onAppear triggered")
+            print("🚀 HealthDataManager authorization status: \(healthDataManager.isAuthorized)")
+            print("🚀 HealthDataManager auth status enum: \(healthDataManager.authorizationStatus)")
+            print("🚀 Current sync status: \(healthDataManager.syncStatus)")
+            
             if healthDataManager.isAuthorized {
+                print("🚀 Authorization confirmed - triggering sync")
                 healthDataManager.syncLatestData()
+            } else {
+                print("❌ Not authorized - skipping sync. Requesting permissions...")
+                healthDataManager.requestHealthKitPermissions()
             }
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func displaySourceName(_ sourceName: String?) -> String {
+        guard let sourceName = sourceName else { return "Not configured" }
+        
+        switch sourceName.lowercased() {
+        case "apple_health", "apple health", "healthkit":
+            return "Apple Health"
+        case "withings":
+            return "Withings"
+        case "oura":
+            return "Oura Ring"
+        case "fitbit":
+            return "Fitbit"
+        case "whoop":
+            return "WHOOP"
+        case "strava":
+            return "Strava"
+        case "myfitnesspal":
+            return "MyFitnessPal"
+        case "cronometer":
+            return "Cronometer"
+        case "csv":
+            return "CSV Upload"
+        default:
+            return sourceName.capitalized
         }
     }
     
@@ -312,7 +374,7 @@ struct QuickActionRow: View {
 
 struct SettingsView: View {
     @StateObject private var networkManager = NetworkManager.shared
-    @StateObject private var healthDataManager = HealthDataManager()
+    @StateObject private var healthDataManager = HealthDataManager.shared
     
     var body: some View {
         NavigationView {
@@ -394,6 +456,9 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+        }
+        .onAppear {
+            healthDataManager.refreshAuthorizationStatus()
         }
     }
     

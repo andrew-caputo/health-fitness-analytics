@@ -742,11 +742,7 @@ enum ConflictSeverity: String, CaseIterable {
 
 // MARK: - Preview
 
-struct SyncDashboardView_Previews: PreviewProvider {
-    static var previews: some View {
-        SyncDashboardView()
-            .environmentObject(HealthDataManager())
-            .environmentObject(BackgroundSyncManager())
-            .environmentObject(NetworkManager.shared)
-    }
+#Preview {
+    SyncDashboardView()
+        .environmentObject(HealthDataManager.shared)
 } 

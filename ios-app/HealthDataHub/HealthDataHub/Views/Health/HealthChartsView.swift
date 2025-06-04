@@ -535,10 +535,7 @@ struct ChartDataPoint: Identifiable {
 
 // MARK: - Preview
 
-struct HealthChartsView_Previews: PreviewProvider {
-    static var previews: some View {
-        HealthChartsView()
-            .environmentObject(HealthDataManager())
-            .environmentObject(NetworkManager.shared)
-    }
+#Preview {
+    HealthChartsView()
+        .environmentObject(HealthDataManager.shared)
 } 

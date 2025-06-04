@@ -478,9 +478,7 @@ extension HealthDataManager {
 
 // MARK: - Preview
 
-struct AppPermissionsView_Previews: PreviewProvider {
-    static var previews: some View {
-        AppPermissionsView()
-            .environmentObject(HealthDataManager())
-    }
+#Preview {
+    AppPermissionsView()
+        .environmentObject(HealthDataManager.shared)
 } 

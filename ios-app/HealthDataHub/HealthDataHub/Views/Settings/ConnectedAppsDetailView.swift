@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ConnectedAppsDetailView: View {
-    @StateObject private var healthDataManager = HealthDataManager()
+    @StateObject private var healthDataManager = HealthDataManager.shared
     
     var body: some View {
         NavigationView {

@@ -274,6 +274,15 @@ class DataSourceSettingsViewModel: ObservableObject {
         isLoading = true
         error = nil
         
+        // Check if source requires connection and isn't connected
+        if sourceName != "apple_health" && !isSourceActuallyConnected(sourceName) {
+            let sourceName = availableSources.first { $0.source_name == sourceName }?.display_name ?? sourceName
+            self.error = "Please connect your \(sourceName) account first before selecting it as a data source. Go to Connected Apps to set up the connection."
+            self.showError = true
+            isLoading = false
+            return
+        }
+        
         do {
             try await networkManager.setPreferredSourceForCategory(category: category, sourceName: sourceName)
             
@@ -282,11 +291,24 @@ class DataSourceSettingsViewModel: ObservableObject {
             currentPreferences = preferencesResponse.preferences ?? .empty
             
         } catch {
-            self.error = "Failed to change source: \(error.localizedDescription)"
+            let sourceName = availableSources.first { $0.source_name == sourceName }?.display_name ?? sourceName
+            
+            // Check if it's a connection-related error
+            if error.localizedDescription.contains("not found") || error.localizedDescription.contains("connected") {
+                self.error = "Please connect your \(sourceName) account first. Go to Connected Apps to set up the connection."
+            } else {
+                self.error = "Failed to change source to \(sourceName): \(error.localizedDescription)"
+            }
             showError = true
         }
         
         isLoading = false
+    }
+    
+    private func isSourceActuallyConnected(_ sourceName: String) -> Bool {
+        // For now, only Apple Health is considered connected
+        // In the future, this would check actual OAuth connection status
+        return sourceName == "apple_health"
     }
     
     func clearError() {
