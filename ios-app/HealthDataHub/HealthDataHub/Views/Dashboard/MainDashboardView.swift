@@ -359,12 +359,30 @@ struct DashboardHomeView: View {
             print("🚀 HealthDataManager auth status enum: \(healthDataManager.authorizationStatus)")
             print("🚀 Current sync status: \(healthDataManager.syncStatus)")
             
-            if healthDataManager.isAuthorized {
-                print("🚀 Authorization confirmed - triggering sync")
-                healthDataManager.syncLatestData()
-            } else {
-                print("❌ Not authorized - skipping sync. Requesting permissions...")
-                healthDataManager.requestHealthKitPermissions()
+            // Only handle HealthKit authorization if user has completed onboarding
+            // Check if user has preferences to determine if they've completed data source selection
+            Task {
+                do {
+                    let preferencesResponse = try await NetworkManager.shared.getUserDataSourcePreferences()
+                    let hasCompletedOnboarding = preferencesResponse.preferences != nil
+                    
+                    await MainActor.run {
+                        if hasCompletedOnboarding {
+                            if healthDataManager.isAuthorized {
+                                print("🚀 Authorization confirmed - triggering sync")
+                                healthDataManager.syncLatestData()
+                            } else {
+                                print("⚠️ User completed onboarding but HealthKit not authorized - will handle in settings")
+                                // Don't automatically request permissions here - let user manage in settings
+                            }
+                        } else {
+                            print("⏳ User hasn't completed onboarding yet - skipping HealthKit operations")
+                        }
+                    }
+                } catch {
+                    // If we can't check preferences, be conservative and don't request permissions
+                    print("⚠️ Cannot verify onboarding status - skipping automatic HealthKit authorization")
+                }
             }
         }
     }
@@ -563,6 +581,10 @@ struct SettingsView: View {
                     if !healthDataManager.isAuthorized {
                         Button("Enable HealthKit") {
                             healthDataManager.requestHealthKitPermissions()
+                            // Refresh status after a delay to allow iOS to process the permission grant
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                                healthDataManager.checkAuthorizationStatusWithRetry(delay: 0.5)
+                            }
                         }
                     }
                 }
@@ -604,7 +626,12 @@ struct SettingsView: View {
             .navigationTitle("Settings")
         }
         .onAppear {
-            healthDataManager.refreshAuthorizationStatus()
+            // Use delayed checking for better reliability
+            healthDataManager.checkAuthorizationStatusWithRetry(delay: 0.5)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            // Refresh authorization status when app becomes active (user might have changed permissions in Health app)
+            healthDataManager.checkAuthorizationStatusWithRetry(delay: 1.0)
         }
     }
     

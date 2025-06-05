@@ -119,102 +119,138 @@ class AchievementsViewModel: ObservableObject {
     }
     
     private func loadMockData() {
-        // Mock achievements data
-        achievements = [
-            Achievement(
-                id: "ach_1",
-                title: "First Week Complete",
-                description: "Complete your first week of consistent health tracking",
-                type: "milestone",
-                category: "consistency",
-                threshold: 7,
-                currentValue: 7,
-                isCompleted: true,
-                completedAt: Calendar.current.date(byAdding: .day, value: -5, to: Date()),
-                badgeLevel: .bronze,
-                points: 100,
-                rarity: "common"
-            ),
-            Achievement(
-                id: "ach_2",
-                title: "Step Master",
-                description: "Walk 10,000 steps in a single day",
-                type: "goal",
-                category: "activity",
-                threshold: 10000,
-                currentValue: 12500,
-                isCompleted: true,
-                completedAt: Calendar.current.date(byAdding: .day, value: -2, to: Date()),
-                badgeLevel: .silver,
-                points: 250,
-                rarity: "uncommon"
-            ),
-            Achievement(
-                id: "ach_3",
-                title: "Early Bird",
-                description: "Wake up before 6 AM for 5 consecutive days",
-                type: "streak",
-                category: "sleep",
-                threshold: 5,
-                currentValue: 3,
-                isCompleted: false,
-                completedAt: nil,
-                badgeLevel: .bronze,
-                points: 150,
-                rarity: "common"
-            ),
-            Achievement(
-                id: "ach_4",
-                title: "Hydration Hero",
-                description: "Drink 8 glasses of water daily for 2 weeks",
-                type: "consistency",
-                category: "wellness",
-                threshold: 14,
-                currentValue: 9,
-                isCompleted: false,
-                completedAt: nil,
-                badgeLevel: .gold,
-                points: 500,
-                rarity: "rare"
-            )
-        ]
+        // Real backend integration - replace mock data
+        print("🏆 Loading real achievements and streaks from backend API...")
         
-        // Mock streaks data
-        streaks = [
-            Streak(
-                id: "streak_1",
-                type: "daily_activity",
-                title: "Daily Steps",
-                description: "Consecutive days hitting step goal",
-                currentCount: 12,
-                longestCount: 15,
-                startDate: Calendar.current.date(byAdding: .day, value: -12, to: Date()) ?? Date(),
-                lastUpdate: Date(),
-                isActive: true,
-                milestones: [
-                    StreakMilestone(id: "ms1", count: 7, title: "One Week", reward: "Bronze Badge", isCompleted: true),
-                    StreakMilestone(id: "ms2", count: 14, title: "Two Weeks", reward: "Silver Badge", isCompleted: false),
-                    StreakMilestone(id: "ms3", count: 30, title: "One Month", reward: "Gold Badge", isCompleted: false)
-                ]
-            ),
-            Streak(
-                id: "streak_2",
-                type: "sleep_consistency",
-                title: "Sleep Schedule",
-                description: "Consecutive nights with 7+ hours sleep",
-                currentCount: 0,
-                longestCount: 8,
-                startDate: Calendar.current.date(byAdding: .day, value: -20, to: Date()) ?? Date(),
-                lastUpdate: Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date(),
-                isActive: false,
-                milestones: [
-                    StreakMilestone(id: "ms4", count: 7, title: "One Week", reward: "Sleep Badge", isCompleted: true),
-                    StreakMilestone(id: "ms5", count: 14, title: "Two Weeks", reward: "Sleep Master", isCompleted: false)
-                ]
-            )
-        ]
-        
-        categories = ["all", "activity", "sleep", "nutrition", "wellness", "consistency"]
+        Task {
+            await MainActor.run {
+                isLoading = true
+            }
+            
+            do {
+                // Load achievements and streaks concurrently
+                async let achievementsTask = loadRealAchievements()
+                async let streaksTask = loadRealStreaks()
+                
+                let (realAchievements, realStreaks) = try await (achievementsTask, streaksTask)
+                
+                await MainActor.run {
+                    self.achievements = realAchievements
+                    self.streaks = realStreaks
+                    self.categories = ["all", "activity", "sleep", "nutrition", "wellness", "consistency"]
+                    self.isLoading = false
+                }
+                
+                print("✅ Loaded \(realAchievements.count) real achievements and \(realStreaks.count) real streaks")
+            } catch {
+                print("❌ Error loading real achievements: \(error)")
+                print("📱 Using fallback: Empty achievements")
+                
+                await MainActor.run {
+                    self.achievements = []
+                    self.streaks = []
+                    self.categories = ["all", "activity", "sleep", "nutrition", "wellness", "consistency"]
+                    self.isLoading = false
+                }
+            }
+        }
+    }
+    
+    private func loadRealAchievements() async throws -> [Achievement] {
+        print("🎯 Fetching real achievements from backend API...")
+        do {
+            let response = try await withTimeout(seconds: 10) {
+                try await NetworkManager.shared.fetchAchievements()
+            }
+            
+            // Convert backend achievements to app model
+            let achievements = response.achievements.map { achievement in
+                Achievement(
+                    id: achievement.id,
+                    title: achievement.title,
+                    description: achievement.description,
+                    type: achievement.type,
+                    category: achievement.category,
+                    threshold: achievement.threshold,
+                    currentValue: achievement.current_value,
+                    isCompleted: achievement.is_completed,
+                    completedAt: parseDate(achievement.completed_at),
+                    badgeLevel: BadgeLevel(rawValue: achievement.badge_level) ?? .bronze,
+                    points: achievement.points,
+                    rarity: achievement.rarity
+                )
+            }
+            
+            print("✅ Converted \(achievements.count) backend achievements to app model")
+            return achievements
+        } catch {
+            print("❌ Error fetching real achievements: \(error)")
+            throw error
+        }
+    }
+    
+    private func loadRealStreaks() async throws -> [Streak] {
+        print("🔥 Fetching real streaks from backend API...")
+        do {
+            let response = try await withTimeout(seconds: 10) {
+                try await NetworkManager.shared.fetchStreaks()
+            }
+            
+            // Convert backend streaks to app model
+            let streaks = response.streaks.map { streak in
+                let milestones = streak.milestones.map { milestone in
+                    StreakMilestone(
+                        id: milestone.id,
+                        count: milestone.count,
+                        title: milestone.title,
+                        reward: milestone.reward,
+                        isCompleted: milestone.is_completed
+                    )
+                }
+                
+                return Streak(
+                    id: streak.id,
+                    type: streak.type,
+                    title: streak.title,
+                    description: streak.description,
+                    currentCount: streak.current_count,
+                    longestCount: streak.longest_count,
+                    startDate: parseDate(streak.start_date) ?? Date(),
+                    lastUpdate: parseDate(streak.last_update) ?? Date(),
+                    isActive: streak.is_active,
+                    milestones: milestones
+                )
+            }
+            
+            print("✅ Converted \(streaks.count) backend streaks to app model")
+            return streaks
+        } catch {
+            print("❌ Error fetching real streaks: \(error)")
+            throw error
+        }
+    }
+    
+    private func parseDate(_ dateString: String?) -> Date? {
+        guard let dateString = dateString else { return nil }
+        let formatter = ISO8601DateFormatter()
+        return formatter.date(from: dateString)
+    }
+    
+    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+        return try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                return try await operation()
+            }
+            
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw TimeoutError()
+            }
+            
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
     }
 }
 

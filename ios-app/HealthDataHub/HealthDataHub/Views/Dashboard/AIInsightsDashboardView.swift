@@ -2,6 +2,7 @@ import SwiftUI
 import Charts
 
 struct AIInsightsDashboardView: View {
+    @EnvironmentObject var networkManager: NetworkManager
     @StateObject private var viewModel = AIInsightsViewModel()
     @State private var selectedTimeframe: TimeFrame = .month
     @State private var showingInsightDetail = false
@@ -38,6 +39,8 @@ struct AIInsightsDashboardView: View {
                 await viewModel.refreshData(timeframe: selectedTimeframe)
             }
             .task {
+                // Initialize ViewModel with NetworkManager
+                viewModel.setNetworkManager(networkManager)
                 await viewModel.loadData(timeframe: selectedTimeframe)
             }
             .sheet(isPresented: $showingInsightDetail) {
@@ -587,6 +590,12 @@ class AIInsightsViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
+    private var networkManager: NetworkManager = NetworkManager.shared
+    
+    func setNetworkManager(_ networkManager: NetworkManager) {
+        self.networkManager = networkManager
+    }
+    
     func loadData(timeframe: TimeFrame) async {
         isLoading = true
         errorMessage = nil
@@ -625,143 +634,184 @@ class AIInsightsViewModel: ObservableObject {
     }
     
     private func loadHealthScore(timeframe: TimeFrame) async throws -> HealthScore {
-        // Mock data for now - replace with actual API call
-        return HealthScore(
-            overallScore: 78.5,
-            componentScores: [
-                ComponentScore(category: "Activity", score: 85.0),
-                ComponentScore(category: "Sleep", score: 72.0),
-                ComponentScore(category: "Nutrition", score: 68.0),
-                ComponentScore(category: "Heart Health", score: 82.0),
-                ComponentScore(category: "Consistency", score: 75.0),
-                ComponentScore(category: "Trend", score: 88.0)
-            ],
-            lastUpdated: Date()
-        )
+        // Real backend integration - replace mock data
+        print("🏥 Fetching real health score from backend API...")
+        do {
+            let response = try await withTimeout(seconds: 10) { [self] in
+                try await self.networkManager.fetchHealthScore()
+            }
+            
+            let componentScores = response.component_scores.map { component in
+                ComponentScore(
+                    category: component.category,
+                    score: component.score
+                )
+            }
+            
+            print("✅ Fetched real health score: \(response.overall_score)")
+            return HealthScore(
+                overallScore: response.overall_score,
+                componentScores: componentScores,
+                lastUpdated: Date()
+            )
+        } catch {
+            print("❌ Error fetching health score: \(error)")
+            print("📱 Using fallback health score")
+            // Fallback to basic health score
+            return HealthScore(
+                overallScore: 0.0,
+                componentScores: [],
+                lastUpdated: Date()
+            )
+        }
     }
     
     private func loadInsightsSummary(timeframe: TimeFrame) async throws -> InsightsSummary {
-        // Mock data for now - replace with actual API call
-        return InsightsSummary(
-            totalInsights: 12,
-            highPriorityCount: 2,
-            mediumPriorityCount: 6,
-            lowPriorityCount: 4,
-            categories: [
-                "correlation": 3,
-                "trend": 4,
-                "anomaly": 2,
-                "recommendation": 2,
-                "pattern": 1
-            ]
-        )
+        // Real backend integration - replace mock data
+        print("🧠 Fetching real insights summary from backend API...")
+        do {
+            let response = try await withTimeout(seconds: 10) { [self] in
+                try await self.networkManager.fetchAIInsights()
+            }
+            
+            print("✅ Fetched real insights: \(response.total_count) insights")
+            return InsightsSummary(
+                totalInsights: response.total_count,
+                highPriorityCount: response.high_priority_count,
+                mediumPriorityCount: response.medium_priority_count,
+                lowPriorityCount: response.low_priority_count,
+                categories: response.categories ?? [:]
+            )
+        } catch {
+            print("❌ Error fetching insights summary: \(error)")
+            print("📱 Using fallback insights summary")
+            // Fallback to empty insights
+            return InsightsSummary(
+                totalInsights: 0,
+                highPriorityCount: 0,
+                mediumPriorityCount: 0,
+                lowPriorityCount: 0,
+                categories: [:]
+            )
+        }
     }
     
     private func loadPriorityInsights(timeframe: TimeFrame) async throws -> [HealthInsight] {
-        // Mock data for now - replace with actual API call
-        return [
-            HealthInsight(
-                id: "1",
-                insightType: "trend",
-                priority: "high",
-                title: "Sleep Duration Declining",
-                description: "Your sleep duration has decreased by 15% over the past 2 weeks. This may impact your energy and recovery.",
-                dataSources: ["Apple Health", "Sleep Cycle"],
-                metricsInvolved: ["sleep_duration"],
-                confidenceScore: 0.89,
-                actionableRecommendations: [
-                    "Set a consistent bedtime routine",
-                    "Limit screen time before bed",
-                    "Create a sleep-friendly environment"
-                ],
-                createdAt: Date()
-            ),
-            HealthInsight(
-                id: "2",
-                insightType: "correlation",
-                priority: "medium",
-                title: "Strong Activity-Sleep Connection",
-                description: "Your step count shows a 73% correlation with sleep quality. More active days lead to better sleep.",
-                dataSources: ["Apple Health"],
-                metricsInvolved: ["activity_steps", "sleep_duration"],
-                confidenceScore: 0.73,
-                actionableRecommendations: [
-                    "Maintain consistent daily activity",
-                    "Time workouts earlier in the day"
-                ],
-                createdAt: Date()
-            )
-        ]
+        // Real backend integration - replace mock data
+        print("🎯 Fetching real priority insights from backend API...")
+        do {
+            let response = try await withTimeout(seconds: 10) { [self] in
+                try await self.networkManager.fetchAIInsights()
+            }
+            
+            // Convert backend insights to app model and filter by priority
+            let allInsights = response.insights.map { insight in
+                HealthInsight(
+                    id: insight.id,
+                    insightType: insight.insight_type,
+                    priority: insight.priority,
+                    title: insight.title,
+                    description: insight.description,
+                    dataSources: insight.data_sources,
+                    metricsInvolved: insight.metrics_involved,
+                    confidenceScore: insight.confidence_score,
+                    actionableRecommendations: insight.actionable_recommendations,
+                    createdAt: Date() // Convert from string if needed
+                )
+            }
+            
+            // Filter for high and medium priority insights
+            let priorityInsights = allInsights.filter { insight in
+                insight.priority.lowercased() == "high" || insight.priority.lowercased() == "medium"
+            }
+            
+            print("✅ Fetched \(priorityInsights.count) priority insights")
+            return Array(priorityInsights.prefix(10)) // Limit to top 10
+        } catch {
+            print("❌ Error fetching priority insights: \(error)")
+            print("📱 Using fallback: No insights available")
+            return []
+        }
     }
     
     private func loadRecommendations(timeframe: TimeFrame) async throws -> [Recommendation] {
-        // Mock data for now - replace with actual API call
-        return [
-            Recommendation(
-                category: "activity",
-                title: "Increase Daily Movement",
-                description: "Your recent average of 7,200 steps is below recommended levels.",
-                metrics: ["activity_steps"],
-                confidence: 0.9,
-                priority: "medium",
-                actions: [
-                    "Start with a goal of 8,000 steps per day",
-                    "Take a 10-minute walk after each meal",
-                    "Use stairs instead of elevators"
-                ],
-                expectedBenefit: "Improved cardiovascular health and energy levels",
-                timeframe: "2-4 weeks"
-            ),
-            Recommendation(
-                category: "sleep",
-                title: "Improve Sleep Consistency",
-                description: "Your sleep duration varies significantly night to night.",
-                metrics: ["sleep_duration"],
-                confidence: 0.8,
-                priority: "medium",
-                actions: [
-                    "Set the same bedtime every day",
-                    "Avoid catching up on sleep during weekends",
-                    "Create a consistent pre-sleep routine"
-                ],
-                expectedBenefit: "Better sleep quality and daytime alertness",
-                timeframe: "3-4 weeks"
-            )
-        ]
+        // Real backend integration - replace mock data
+        print("💡 Fetching real recommendations from backend API...")
+        do {
+            let response = try await withTimeout(seconds: 10) { [self] in
+                try await self.networkManager.fetchAIRecommendations()
+            }
+            
+            // Convert backend recommendations to app model
+            let recommendations = response.recommendations.map { rec in
+                Recommendation(
+                    category: rec.category,
+                    title: rec.title,
+                    description: rec.description,
+                    metrics: rec.metrics,
+                    confidence: rec.confidence,
+                    priority: rec.priority,
+                    actions: rec.actions,
+                    expectedBenefit: rec.expected_benefit,
+                    timeframe: rec.timeframe
+                )
+            }
+            
+            print("✅ Fetched \(recommendations.count) real recommendations")
+            return recommendations
+        } catch {
+            print("❌ Error fetching recommendations: \(error)")
+            print("📱 Using fallback: No recommendations available")
+            return []
+        }
     }
     
     private func loadAnomalies(timeframe: TimeFrame) async throws -> [Anomaly] {
-        // Mock data for now - replace with actual API call
-        return [
-            Anomaly(
-                metric: "heart_rate_resting",
-                date: "2024-01-15",
-                value: 95.0,
-                severity: 0.7,
-                confidence: 0.85,
-                type: "statistical",
-                description: "Unusual resting heart rate value detected - 25% higher than your typical range.",
-                recommendations: [
-                    "Check if you were stressed or had caffeine",
-                    "Monitor for additional symptoms",
-                    "Consider consulting healthcare provider if pattern continues"
-                ]
-            ),
-            Anomaly(
-                metric: "sleep_duration",
-                date: "2024-01-14",
-                value: 4.2,
-                severity: 0.8,
-                confidence: 0.92,
-                type: "statistical",
-                description: "Significantly low sleep duration detected.",
-                recommendations: [
-                    "Review what affected your sleep that night",
-                    "Check for environmental factors",
-                    "Consider sleep hygiene improvements"
-                ]
-            )
-        ]
+        // Real backend integration - replace mock data
+        print("⚠️ Fetching real anomalies from backend API...")
+        do {
+            let response = try await withTimeout(seconds: 10) { [self] in
+                try await self.networkManager.fetchAIAnomalies()
+            }
+            
+            // Convert backend anomalies to app model
+            let anomalies = response.anomalies.map { anomaly in
+                Anomaly(
+                    metric: anomaly.metric,
+                    date: anomaly.date,
+                    value: anomaly.value,
+                    severity: anomaly.severity,
+                    confidence: anomaly.confidence,
+                    type: anomaly.type,
+                    description: anomaly.description,
+                    recommendations: anomaly.recommendations
+                )
+            }
+            
+            print("✅ Fetched \(anomalies.count) real anomalies")
+            return anomalies
+        } catch {
+            print("❌ Error fetching anomalies: \(error)")
+            print("📱 Using fallback: No anomalies detected")
+            return []
+        }
+    }
+    
+    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+        return try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                return try await operation()
+            }
+            
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw TimeoutError()
+            }
+            
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
     }
 }
 

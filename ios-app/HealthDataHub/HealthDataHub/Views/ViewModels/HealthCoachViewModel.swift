@@ -52,210 +52,250 @@ class HealthCoachViewModel: ObservableObject {
     }
     
     private func loadMockData() {
-        // Mock coaching messages
-        coachingMessages = [
-            CoachingMessage(
-                id: "msg1",
-                coachingType: .motivational,
-                title: "Great Progress on Sleep!",
-                message: "You've been consistently getting 7+ hours of sleep this week. This is excellent for your recovery and overall health.",
-                content: "You've been consistently getting 7+ hours of sleep this week. This is excellent for your recovery and overall health.",
-                timing: .daily,
-                timestamp: Date(),
-                priority: 4,
-                targetMetrics: ["sleep_duration", "sleep_quality"],
-                actionableSteps: ["Continue your current bedtime routine", "Track how you feel with this sleep schedule"],
-                actionItems: ["Continue your current bedtime routine", "Track how you feel with this sleep schedule"],
-                expectedOutcome: "Improved energy and recovery",
-                followUpDays: 7,
-                personalizationFactors: ["good_sleep_habits", "consistent_schedule"],
-                focusAreas: ["sleep", "recovery"],
-                isRead: false
-            ),
-            CoachingMessage(
-                id: "msg2",
-                coachingType: .educational,
-                title: "Understanding Heart Rate Zones",
-                message: "Your recent workouts show you're spending most time in Zone 2. Here's why this is beneficial for building your aerobic base.",
-                content: "Your recent workouts show you're spending most time in Zone 2. Here's why this is beneficial for building your aerobic base.",
-                timing: .weekly,
-                timestamp: Calendar.current.date(byAdding: .hour, value: -2, to: Date()),
-                priority: 3,
-                targetMetrics: ["heart_rate", "exercise_intensity"],
-                actionableSteps: ["Continue Zone 2 training", "Add one Zone 4 session per week"],
-                actionItems: ["Continue Zone 2 training", "Add one Zone 4 session per week"],
-                expectedOutcome: "Improved cardiovascular fitness",
-                followUpDays: 14,
-                personalizationFactors: ["endurance_focus", "heart_rate_data"],
-                focusAreas: ["cardio", "training"],
-                isRead: false
-            ),
-            CoachingMessage(
-                id: "msg3",
-                coachingType: .corrective,
-                title: "Nutrition Opportunity",
-                message: "Your protein intake has been below target this week. Let's work on incorporating more protein-rich foods into your meals.",
-                content: "Your protein intake has been below target this week. Let's work on incorporating more protein-rich foods into your meals.",
-                timing: .immediate,
-                timestamp: Calendar.current.date(byAdding: .day, value: -1, to: Date()),
-                priority: 5,
-                targetMetrics: ["protein_intake", "macronutrients"],
-                actionableSteps: ["Add protein to each meal", "Consider a protein shake post-workout"],
-                actionItems: ["Add protein to each meal", "Consider a protein shake post-workout"],
-                expectedOutcome: "Better muscle recovery and satiety",
-                followUpDays: 3,
-                personalizationFactors: ["low_protein", "muscle_building_goal"],
-                focusAreas: ["nutrition", "recovery"],
-                isRead: false
-            )
-        ]
+        // Real backend integration - replace mock data
+        print("🧠 Loading real coaching data from backend API...")
+        
+        Task {
+            await MainActor.run {
+                isLoading = true
+            }
+            
+            do {
+                // Load coaching data concurrently
+                async let messagesTask = loadRealCoachingMessages()
+                async let interventionsTask = loadRealInterventions()
+                async let progressTask = loadRealProgressAnalysis()
+                
+                let (realMessages, realInterventions, realProgress) = try await (messagesTask, interventionsTask, progressTask)
+                
+                await MainActor.run {
+                    self.coachingMessages = realMessages
+                    self.behavioralInterventions = realInterventions
+                    self.progressAnalysis = realProgress
+                    
+                    // Generate focus areas from messages and interventions
+                    self.focusAreas = self.generateFocusAreas(from: realMessages, interventions: realInterventions)
+                    
+                    // Generate coaching history from messages
+                    self.coachingHistory = self.generateCoachingHistory(from: realMessages)
+                    
+                    self.isLoading = false
+                }
+                
+                print("✅ Loaded \(realMessages.count) coaching messages, \(realInterventions.count) interventions")
+            } catch {
+                print("❌ Error loading real coaching data: \(error)")
+                print("📱 Using fallback: Empty coaching data")
+                
+                await MainActor.run {
+                    self.coachingMessages = []
+                    self.behavioralInterventions = []
+                    self.focusAreas = []
+                    self.coachingHistory = []
+                    self.progressAnalysis = nil
+                    self.isLoading = false
+                }
+            }
+        }
+    }
     
-        // Mock behavioral interventions
-        behavioralInterventions = [
-            BehavioralIntervention(
-                id: "int1",
-                title: "Evening Wind-Down Routine",
-                description: "Establish a consistent pre-sleep routine to improve sleep quality",
-                interventionType: .habitFormation,
-                targetBehavior: "Consistent bedtime routine",
-                currentPattern: "Inconsistent sleep schedule, screen time before bed",
-                desiredPattern: "Regular 30-minute wind-down routine starting at 9:30 PM",
-                interventionStrategy: "Use environmental cues and habit stacking to create a consistent routine",
-                strategy: "Use environmental cues and habit stacking to create a consistent routine",
-                implementationSteps: [
-                    "Set a daily alarm for 9:30 PM",
-                    "Put devices in another room",
-                    "Read for 15 minutes",
-                    "Practice 10 minutes of meditation",
-                    "Write in gratitude journal"
-                ],
-                successMetrics: ["Days following routine", "Sleep quality score", "Time to fall asleep"],
-                timelineDays: 21,
-                durationDays: 21,
-                difficultyLevel: "moderate",
-                progress: 0.65,
-                startDate: Calendar.current.date(byAdding: .day, value: -14, to: Date())
-            ),
-            BehavioralIntervention(
-                id: "int2",
-                title: "Hydration Habit",
-                description: "Increase daily water intake through strategic reminders",
-                interventionType: .environmentalDesign,
-                targetBehavior: "Drinking 8 glasses of water daily",
-                currentPattern: "Forgetting to drink water, only 4-5 glasses per day",
-                desiredPattern: "Consistent water intake throughout the day",
-                interventionStrategy: "Place water bottles in strategic locations and use time-based reminders",
-                strategy: "Place water bottles in strategic locations and use time-based reminders",
-                implementationSteps: [
-                    "Place water bottle by bedside",
-                    "Set hourly reminders",
-                    "Drink water before each meal",
-                    "Use a marked water bottle to track intake"
-                ],
-                successMetrics: ["Daily water intake", "Reminder completion rate"],
-                timelineDays: 14,
-                durationDays: 14,
-                difficultyLevel: "easy",
-                progress: 0.85,
-                startDate: Calendar.current.date(byAdding: .day, value: -10, to: Date())
-            )
-        ]
-        
-        // Mock focus areas
-        focusAreas = [
-            FocusArea(
-                id: "focus1",
-                title: "Sleep Optimization",
-                description: "Improving sleep quality and consistency",
-            priority: .high,
-            icon: "bed.double.fill",
-                color: .purple,
-                actionItems: ["Maintain bedtime routine", "Track sleep patterns"],
-                expectedImpact: "Better energy and recovery",
-                timeframe: "2-3 weeks"
-            ),
-            FocusArea(
-                id: "focus2",
-                title: "Nutrition Balance",
-                description: "Optimizing macronutrient intake",
-                priority: .medium,
-                icon: "fork.knife",
-                color: .green,
-                actionItems: ["Increase protein intake", "Plan balanced meals"],
-                expectedImpact: "Improved body composition",
-                timeframe: "1-2 months"
-            )
-        ]
-        
-        // Mock coaching history
-        coachingHistory = [
-            CoachingHistoryEntry(
-                id: "hist1",
-                type: .celebratory,
-                title: "7-Day Sleep Streak!",
-                summary: "Congratulations on achieving 7 consecutive days of 7+ hours sleep",
-                timestamp: Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date(),
-                outcome: "Sleep consistency improved by 40%"
-            ),
-            CoachingHistoryEntry(
-                id: "hist2",
-                type: .educational,
-                title: "Heart Rate Training Zones",
-                summary: "Learned about optimal training zones for aerobic development",
-                timestamp: Calendar.current.date(byAdding: .weekOfYear, value: -1, to: Date()) ?? Date(),
-                outcome: "Applied Zone 2 training in 3 workouts"
-            )
-        ]
-        
-        // Mock progress analysis
-        progressAnalysis = ProgressAnalysis(
-            id: "analysis1",
-            analysisDate: Date(),
-            timeframe: "Past 2 weeks",
-            summary: "Overall progress has been excellent with significant improvements in sleep and activity levels. Focus on nutrition will help optimize results.",
-            overallScore: 85,
-            keyMetrics: [
-                MetricProgress(
-                    metric: "Sleep Quality",
-                    currentValue: "8.2/10",
-                    previousValue: "7.1/10",
-                    change: 15.5,
-                    isImprovement: true,
-                    changeText: "+15.5%"
-                ),
-                MetricProgress(
-                    metric: "Daily Steps",
-                    currentValue: "9,450",
-                    previousValue: "8,200",
-                    change: 15.2,
-                    isImprovement: true,
-                    changeText: "+1,250"
-                ),
-                MetricProgress(
-                    metric: "Protein Intake",
-                    currentValue: "95g",
-                    previousValue: "120g",
-                    change: -20.8,
-                    isImprovement: false,
-                    changeText: "-25g"
-                ),
-                MetricProgress(
-                    metric: "Exercise Frequency",
-                    currentValue: "5 days/week",
-                    previousValue: "3 days/week",
-                    change: 66.7,
-                    isImprovement: true,
-                    changeText: "+2 days"
+    // MARK: - Real Backend Integration Methods
+    
+    private func loadRealCoachingMessages() async throws -> [CoachingMessage] {
+        print("💬 Fetching real coaching messages from backend API...")
+        do {
+            let response = try await withTimeout(seconds: 10) {
+                try await NetworkManager.shared.fetchCoachingMessages()
+            }
+            
+            // Convert backend messages to app model
+            let messages = response.messages.map { message in
+                CoachingMessage(
+                    id: message.id,
+                    coachingType: CoachingType(rawValue: message.coaching_type) ?? .educational,
+                    title: message.title,
+                    message: message.message,
+                    content: message.content,
+                    timing: InterventionTiming(rawValue: message.timing) ?? .daily,
+                    timestamp: parseDate(message.timestamp) ?? Date(),
+                    priority: message.priority,
+                    targetMetrics: message.target_metrics,
+                    actionableSteps: message.actionable_steps,
+                    actionItems: message.actionable_steps,
+                    expectedOutcome: message.expected_outcome,
+                    followUpDays: message.follow_up_days,
+                    personalizationFactors: message.personalization_factors,
+                    focusAreas: message.focus_areas,
+                    isRead: message.is_read
                 )
-            ],
-            recommendations: [
-                "Continue your excellent sleep routine",
-                "Increase protein intake by 20-25g daily",
-                "Consider adding one strength training session",
-                "Maintain current activity levels"
-            ],
-            focusAreas: ["sleep", "stress_management", "recovery"],
-            nextAnalysisDate: Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
-        )
+            }
+            
+            print("✅ Converted \(messages.count) backend coaching messages to app model")
+            return messages
+        } catch {
+            print("❌ Error fetching real coaching messages: \(error)")
+            throw error
+        }
+    }
+    
+    private func loadRealInterventions() async throws -> [BehavioralIntervention] {
+        print("🎯 Fetching real interventions from backend API...")
+        do {
+            let response = try await withTimeout(seconds: 10) {
+                try await NetworkManager.shared.fetchCoachingInterventions()
+            }
+            
+            // Convert backend interventions to app model
+            let interventions = response.interventions.map { intervention in
+                BehavioralIntervention(
+                    id: intervention.id,
+                    title: intervention.title,
+                    description: intervention.description,
+                    interventionType: InterventionType(rawValue: intervention.intervention_type) ?? .habitFormation,
+                    targetBehavior: intervention.target_behavior,
+                    currentPattern: intervention.current_pattern,
+                    desiredPattern: intervention.desired_pattern,
+                    interventionStrategy: intervention.strategy,
+                    strategy: intervention.strategy,
+                    implementationSteps: intervention.implementation_steps,
+                    successMetrics: intervention.success_metrics,
+                    timelineDays: intervention.duration_days,
+                    durationDays: intervention.duration_days,
+                    difficultyLevel: intervention.difficulty_level,
+                    progress: intervention.progress,
+                    startDate: parseDate(intervention.start_date)
+                )
+            }
+            
+            print("✅ Converted \(interventions.count) backend interventions to app model")
+            return interventions
+        } catch {
+            print("❌ Error fetching real interventions: \(error)")
+            throw error
+        }
+    }
+    
+    private func loadRealProgressAnalysis() async throws -> ProgressAnalysis? {
+        print("📊 Fetching real progress analysis from backend API...")
+        do {
+            let response = try await withTimeout(seconds: 10) {
+                try await NetworkManager.shared.fetchCoachingProgress()
+            }
+            
+            // Convert backend progress analysis to app model
+            let keyMetrics = response.key_metrics.map { metric in
+                MetricProgress(
+                    metric: metric.metric,
+                    currentValue: metric.current_value,
+                    previousValue: metric.previous_value,
+                    change: metric.change,
+                    isImprovement: metric.is_improvement,
+                    changeText: metric.change_text
+                )
+            }
+            
+            let progressAnalysis = ProgressAnalysis(
+                id: response.id,
+                analysisDate: parseDate(response.analysis_date) ?? Date(),
+                timeframe: response.timeframe,
+                summary: response.summary,
+                overallScore: Int(response.overall_score),
+                keyMetrics: keyMetrics,
+                recommendations: response.improvements,
+                focusAreas: response.areas_for_focus,
+                nextAnalysisDate: Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+            )
+            
+            print("✅ Converted backend progress analysis to app model")
+            return progressAnalysis
+        } catch {
+            print("❌ Error fetching real progress analysis: \(error)")
+            throw error
+        }
+    }
+    
+    private func generateFocusAreas(from messages: [CoachingMessage], interventions: [BehavioralIntervention]) -> [FocusArea] {
+        // Generate focus areas based on coaching messages and interventions
+        var areas: [FocusArea] = []
+        
+        // Extract unique focus areas from messages
+        let messageFocusAreas = Set(messages.flatMap { $0.focusAreas })
+        
+        for (index, area) in messageFocusAreas.enumerated() {
+            let relatedMessages = messages.filter { $0.focusAreas.contains(area) }
+            let priority: FocusPriority = relatedMessages.contains { $0.priority >= 4 } ? .high : 
+                                           relatedMessages.contains { $0.priority >= 3 } ? .medium : .low
+            
+            areas.append(FocusArea(
+                id: "focus_\(index)",
+                title: area.capitalized,
+                description: "Focus area based on coaching insights",
+                priority: priority,
+                icon: iconForFocusArea(area),
+                color: colorForFocusArea(area),
+                actionItems: relatedMessages.flatMap { $0.displayActionItems },
+                expectedImpact: relatedMessages.first?.expectedOutcome ?? "Improved health outcomes",
+                timeframe: "2-4 weeks"
+            ))
+        }
+        
+        return areas
+    }
+    
+    private func generateCoachingHistory(from messages: [CoachingMessage]) -> [CoachingHistoryEntry] {
+        // Generate history from read messages
+        return messages.filter { $0.isRead ?? false }.map { message in
+            CoachingHistoryEntry(
+                id: "hist_\(message.id)",
+                type: message.coachingType == .motivational ? .celebratory : .educational,
+                title: message.title,
+                summary: message.message,
+                timestamp: message.timestamp ?? Date(),
+                outcome: message.expectedOutcome
+            )
+        }
+    }
+    
+    private func iconForFocusArea(_ area: String) -> String {
+        switch area.lowercased() {
+        case "sleep": return "bed.double.fill"
+        case "nutrition": return "fork.knife"
+        case "activity", "exercise": return "figure.run"
+        case "recovery": return "heart.fill"
+        default: return "target"
+        }
+    }
+    
+    private func colorForFocusArea(_ area: String) -> Color {
+        switch area.lowercased() {
+        case "sleep": return .purple
+        case "nutrition": return .green
+        case "activity", "exercise": return .blue
+        case "recovery": return .red
+        default: return .gray
+        }
+    }
+    
+    private func parseDate(_ dateString: String?) -> Date? {
+        guard let dateString = dateString else { return nil }
+        let formatter = ISO8601DateFormatter()
+        return formatter.date(from: dateString)
+    }
+    
+    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+        return try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                return try await operation()
+            }
+            
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw TimeoutError()
+            }
+            
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
     }
 } 

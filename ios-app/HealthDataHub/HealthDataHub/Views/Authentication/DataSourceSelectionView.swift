@@ -144,9 +144,10 @@ struct DataSourceSelectionView: View {
         VStack(spacing: 12) {
             Button("Continue") {
                 Task {
-                    await viewModel.savePreferences()
+                    // Complete the full data source selection process
+                    await viewModel.completeDataSourceSelection()
                     
-                    // Only dismiss if save was successful
+                    // Only dismiss if completion was successful
                     if viewModel.error == nil {
                         onComplete()
                     } else {

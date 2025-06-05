@@ -561,71 +561,7 @@ struct GoalProgress: Codable, Identifiable {
     }
 }
 
-// MARK: - API Response Models
-
-struct GoalRecommendationsResponse: Codable {
-    let recommendations: [GoalRecommendation]
-    let totalCount: Int
-    let userPreferences: [String: String]
-    
-    enum CodingKeys: String, CodingKey {
-        case recommendations
-        case totalCount = "total_count"
-        case userPreferences = "user_preferences"
-    }
-}
-
-struct AchievementsResponse: Codable {
-    let achievements: [Achievement]
-    let totalCount: Int
-    let recentCount: Int
-    let categories: [String: Int]
-    
-    enum CodingKeys: String, CodingKey {
-        case achievements
-        case totalCount = "total_count"
-        case recentCount = "recent_count"
-        case categories
-    }
-}
-
-struct StreaksResponse: Codable {
-    let streaks: [Streak]
-    let activeCount: Int
-    let longestStreak: Streak?
-    let totalMilestones: Int
-    
-    enum CodingKeys: String, CodingKey {
-        case streaks
-        case activeCount = "active_count"
-        case longestStreak = "longest_streak"
-        case totalMilestones = "total_milestones"
-    }
-}
-
-struct CoachingMessagesResponse: Codable {
-    let messages: [CoachingMessage]
-    let priorityCount: [String: Int]
-    let nextUpdate: Date?
-    
-    enum CodingKeys: String, CodingKey {
-        case messages
-        case priorityCount = "priority_count"
-        case nextUpdate = "next_update"
-    }
-}
-
-struct GoalProgressResponse: Codable {
-    let progress: GoalProgress
-    let predictions: [String]
-    let recommendations: [String]
-    
-    enum CodingKeys: String, CodingKey {
-        case progress, predictions, recommendations
-    }
-}
-
-// MARK: - Additional Models for Views
+// MARK: - Additional Models for Views (Note: API Response Models moved to NetworkManager.swift)
 
 struct HealthInsight: Codable, Identifiable {
     let id: String

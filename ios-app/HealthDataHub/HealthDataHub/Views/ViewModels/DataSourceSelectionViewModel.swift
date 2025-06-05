@@ -124,6 +124,9 @@ class DataSourceSelectionViewModel: ObservableObject {
             }
         }
         
+        // Note: HealthKit permissions will be requested after user completes all selections
+        // No immediate permission requests to avoid premature prompts
+        
         print("📊 Updated preferences: \(preferences)")
     }
     
@@ -143,10 +146,22 @@ class DataSourceSelectionViewModel: ObservableObject {
         }
     }
     
-    func savePreferences() async {
+    func completeDataSourceSelection() async {
         isLoading = true
         error = nil
         
+        // Step 1: Request HealthKit permissions if Apple Health is selected
+        if hasAppleHealthSelection() {
+            print("🍎 Apple Health selected - requesting HealthKit permissions...")
+            await requestHealthKitPermissionsForCompletion()
+        }
+        
+        // Step 2: Save preferences after permission handling
+        await savePreferences()
+    }
+    
+    func savePreferences() async {
+        // This method is now called internally after permission handling
         let newPreferences = UserDataSourcePreferences(
             activity_source: preferences[.activity] ?? nil,
             sleep_source: preferences[.sleep] ?? nil,
@@ -161,6 +176,7 @@ class DataSourceSelectionViewModel: ObservableObject {
             // Successfully created, ensure error is nil
             self.error = nil
             self.showError = false
+            print("✅ Preferences saved successfully")
         } catch let creationError {
             print("⚠️ Create preferences failed: \(creationError.localizedDescription)")
             
@@ -170,6 +186,7 @@ class DataSourceSelectionViewModel: ObservableObject {
                 // Successfully updated, ensure error is nil
                 self.error = nil
                 self.showError = false
+                print("✅ Preferences updated successfully")
             } catch let updateError {
                 print("❌ Update preferences also failed: \(updateError.localizedDescription)")
                 self.error = "Failed to save preferences. Update attempt failed: \(updateError.localizedDescription)"
@@ -205,6 +222,54 @@ class DataSourceSelectionViewModel: ObservableObject {
     func clearError() {
         error = nil
         showError = false
+    }
+    
+    // MARK: - HealthKit Authorization
+    
+    func requestHealthKitPermissionsIfNeeded() async {
+        // Legacy method - redirects to completion method
+        await requestHealthKitPermissionsForCompletion()
+    }
+    
+    func requestHealthKitPermissionsForCompletion() async {
+        print("🍎 Requesting HealthKit permissions for data source completion...")
+        
+        await MainActor.run {
+            HealthDataManager.shared.requestHealthKitPermissions()
+        }
+        
+        // Wait longer for permission dialog and iOS processing
+        print("⏰ Waiting for permission dialog and iOS processing...")
+        try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+        
+        await validateHealthKitPermissionsForCompletion()
+    }
+    
+    func hasAppleHealthSelection() -> Bool {
+        return preferences.values.contains("apple_health")
+    }
+    
+    func validateHealthKitPermissions() async {
+        await validateHealthKitPermissionsForCompletion()
+    }
+    
+    func validateHealthKitPermissionsForCompletion() async {
+        await MainActor.run {
+            let hasPermissions = HealthDataManager.shared.hasRequiredPermissions()
+            print("📋 HealthKit permission validation (completion): \(hasPermissions ? "✅ Success" : "❌ Insufficient permissions")")
+            
+            if !hasPermissions && hasAppleHealthSelection() {
+                // For completion, be more lenient - user can fix this later
+                print("⚠️ Some HealthKit permissions not granted, but proceeding with setup")
+                // Don't show error during completion - just log the issue
+            } else if hasPermissions {
+                print("🎉 HealthKit permissions successfully granted!")
+            }
+        }
+    }
+    
+    func checkHealthKitAuthorizationStatus() -> Bool {
+        return HealthDataManager.shared.hasRequiredPermissions()
     }
     
     func clearCategoryPreference(_ category: HealthCategory) async {

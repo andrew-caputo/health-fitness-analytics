@@ -28,8 +28,14 @@ struct AppPermissionsView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Health App") {
-                        showingHealthApp = true
+                    HStack {
+                        Button("Refresh") {
+                            loadPermissions()
+                        }
+                        
+                        Button("Health App") {
+                            showingHealthApp = true
+                        }
                     }
                 }
             }
@@ -143,6 +149,11 @@ struct AppPermissionsView: View {
             Section {
                 Button(action: {
                     healthDataManager.requestHealthKitPermissions()
+                    
+                    // Refresh permission display after request
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        loadPermissions()
+                    }
                 }) {
                     HStack {
                         Image(systemName: "plus.circle.fill")

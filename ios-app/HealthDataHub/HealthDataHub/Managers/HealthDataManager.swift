@@ -25,6 +25,11 @@ class HealthDataManager: ObservableObject {
     @Published var lastSyncDate: Date?
     @Published var syncStatus: SyncStatus = .idle
     
+    // Authorization state management
+    private var lastAuthorizationCheck: Date?
+    private var authorizationCheckCooldown: TimeInterval = 3.0 // 3 seconds between checks
+    private var pendingAuthorizationUpdate: Bool = false
+    
     // User preferences
     @Published var userPreferences: UserDataSourcePreferences?
     
@@ -125,8 +130,9 @@ class HealthDataManager: ObservableObject {
     
     private init() {
         checkHealthKitAvailability()
-        print("🚀 HealthDataManager initialized - starting authorization check...")
-        checkOverallAuthorizationStatus() // Use enhanced checking from start
+        print("🚀 HealthDataManager initialized - delaying authorization check for proper timing...")
+        // Don't check permissions immediately - iOS needs time to process grants
+        // Permissions will be checked when actually needed or explicitly requested
     }
     
     // MARK: - HealthKit Availability
@@ -149,12 +155,14 @@ class HealthDataManager: ObservableObject {
         healthStore.requestAuthorization(toShare: nil, read: healthDataTypesToRead) { [weak self] success, error in
             DispatchQueue.main.async {
                 if success {
-                    print("HealthKit authorization granted")
-                    self?.checkOverallAuthorizationStatus() // Use enhanced checking
+                    print("✅ HealthKit authorization request completed successfully")
+                    // Use delayed checking to allow iOS to process the grants
+                    self?.checkAuthorizationStatusWithRetry(delay: 2.0)
                     self?.startObservingHealthData()
                 } else {
-                    print("HealthKit authorization failed: \(error?.localizedDescription ?? "Unknown error")")
-                    self?.checkOverallAuthorizationStatus() // Check what we got
+                    print("❌ HealthKit authorization request failed: \(error?.localizedDescription ?? "Unknown error")")
+                    // Still check what permissions we might have gotten
+                    self?.checkAuthorizationStatusWithRetry(delay: 1.0)
                 }
             }
         }
@@ -171,61 +179,265 @@ class HealthDataManager: ObservableObject {
         checkOverallAuthorizationStatus()
     }
     
+    func checkAuthorizationStatusWithRetry(delay: TimeInterval = 1.0) {
+        print("⏰ Scheduling permission check with \(delay)s delay for iOS to process grants...")
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            self?.checkOverallAuthorizationStatus()
+        }
+    }
+    
     private func checkOverallAuthorizationStatus() {
-        // PRACTICAL APPROACH: Try to read actual data to determine if we're authorized
-        // This handles the iOS reality where users grant selective permissions
+        print("🔍 Checking HealthKit authorization via data capability test...")
         
-        print("🔍 Checking HealthKit authorization status...")
+        // Use data-based detection instead of unreliable permission API on real devices
+        testDataAccessCapability()
+    }
+    
+    private func testDataAccessCapability() {
+        print("🧪 Testing actual HealthKit data access capability...")
         
-        // Test if we can read step count (most commonly granted permission)
-        guard let stepCountType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
-            print("❌ HealthKit step count type not available")
+        guard HKHealthStore.isHealthDataAvailable() else {
+            print("❌ HealthKit not available on this device")
             updateAuthorizationStatus(isAuthorized: false)
             return
         }
         
-        // Create a simple query to test data access
+        // Test reading basic data types that are commonly granted
+        let testGroup = DispatchGroup()
+        var successfulReads = 0
+        let totalTests = 3
+        
+        // Test Steps (most commonly granted)
+        testGroup.enter()
+        testReadSteps { success in
+            if success { 
+                successfulReads += 1
+                print("✅ Steps data access: SUCCESS")
+            } else {
+                print("❌ Steps data access: FAILED")
+            }
+            testGroup.leave()
+        }
+        
+        // Test Heart Rate
+        testGroup.enter()
+        testReadHeartRate { success in
+            if success { 
+                successfulReads += 1
+                print("✅ Heart Rate data access: SUCCESS")
+            } else {
+                print("❌ Heart Rate data access: FAILED")
+            }
+            testGroup.leave()
+        }
+        
+        // Test Sleep
+        testGroup.enter()
+        testReadSleep { success in
+            if success { 
+                successfulReads += 1
+                print("✅ Sleep data access: SUCCESS")
+            } else {
+                print("❌ Sleep data access: FAILED")
+            }
+            testGroup.leave()
+        }
+        
+        testGroup.notify(queue: .main) {
+            let hasDataAccess = successfulReads >= 1 // At least one successful read indicates authorization
+            print("📊 Data Access Test Results:")
+            print("   ✅ Successful reads: \(successfulReads)/\(totalTests)")
+            print("   🎯 Data Access Capability: \(hasDataAccess ? "AVAILABLE" : "NOT AVAILABLE")")
+            
+            self.updateAuthorizationStatus(isAuthorized: hasDataAccess)
+        }
+    }
+    
+    // MARK: - Data Access Test Methods
+    
+    private func testReadSteps(completion: @escaping (Bool) -> Void) {
+        guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+            completion(false)
+            return
+        }
+        
         let now = Date()
-        let oneDayAgo = Calendar.current.date(byAdding: .day, value: -1, to: now) ?? now
-        let predicate = HKQuery.predicateForSamples(withStart: oneDayAgo, end: now, options: .strictStartDate)
+        let oneHourAgo = Calendar.current.date(byAdding: .hour, value: -1, to: now) ?? now
+        let predicate = HKQuery.predicateForSamples(withStart: oneHourAgo, end: now, options: .strictStartDate)
         
         let query = HKSampleQuery(
-            sampleType: stepCountType,
+            sampleType: stepType,
             predicate: predicate,
             limit: 1,
-            sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]
-        ) { [weak self] _, samples, error in
+            sortDescriptors: nil
+        ) { _, samples, error in
             DispatchQueue.main.async {
-                if let error = error {
-                    // Check if error indicates no permission vs no data
-                    if error.localizedDescription.contains("authorization") || 
-                       error.localizedDescription.contains("denied") {
-                        print("❌ HealthKit authorization denied: \(error.localizedDescription)")
-                        self?.updateAuthorizationStatus(isAuthorized: false)
-                    } else {
-                        // Other errors might be network/data issues, assume authorized
-                        print("⚠️ HealthKit query error (but likely authorized): \(error.localizedDescription)")
-                        self?.updateAuthorizationStatus(isAuthorized: true)
-                    }
-                } else {
-                    // Success - either we got data or no data available (but authorized)
-                    let dataCount = samples?.count ?? 0
-                    print("✅ HealthKit query successful: \(dataCount) samples found")
-                    self?.updateAuthorizationStatus(isAuthorized: true)
-                }
+                completion(error == nil) // Success if no error, regardless of data presence
             }
         }
         
         healthStore.execute(query)
     }
     
+    private func testReadHeartRate(completion: @escaping (Bool) -> Void) {
+        guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
+            completion(false)
+            return
+        }
+        
+        let now = Date()
+        let oneHourAgo = Calendar.current.date(byAdding: .hour, value: -1, to: now) ?? now
+        let predicate = HKQuery.predicateForSamples(withStart: oneHourAgo, end: now, options: .strictStartDate)
+        
+        let query = HKSampleQuery(
+            sampleType: heartRateType,
+            predicate: predicate,
+            limit: 1,
+            sortDescriptors: nil
+        ) { _, samples, error in
+            DispatchQueue.main.async {
+                completion(error == nil) // Success if no error, regardless of data presence
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    private func testReadSleep(completion: @escaping (Bool) -> Void) {
+        guard let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else {
+            completion(false)
+            return
+        }
+        
+        let now = Date()
+        let oneDayAgo = Calendar.current.date(byAdding: .day, value: -1, to: now) ?? now
+        let predicate = HKQuery.predicateForSamples(withStart: oneDayAgo, end: now, options: .strictStartDate)
+        
+        let query = HKSampleQuery(
+            sampleType: sleepType,
+            predicate: predicate,
+            limit: 1,
+            sortDescriptors: nil
+        ) { _, samples, error in
+            DispatchQueue.main.async {
+                completion(error == nil) // Success if no error, regardless of data presence
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    // MARK: - Permission Helper Methods
+    
+    private func getCoreHealthDataTypes() -> [HKObjectType] {
+        var types: [HKObjectType] = []
+        
+        // Core activity data
+        if let stepCount = HKQuantityType.quantityType(forIdentifier: .stepCount) {
+            types.append(stepCount)
+        }
+        if let activeCalories = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) {
+            types.append(activeCalories)
+        }
+        
+        // Core health metrics
+        if let heartRate = HKQuantityType.quantityType(forIdentifier: .heartRate) {
+            types.append(heartRate)
+        }
+        if let bodyMass = HKQuantityType.quantityType(forIdentifier: .bodyMass) {
+            types.append(bodyMass)
+        }
+        
+        // Sleep data
+        if let sleepAnalysis = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) {
+            types.append(sleepAnalysis)
+        }
+        
+        // Workouts
+        types.append(HKWorkoutType.workoutType())
+        
+        return types
+    }
+    
+    private func getHealthTypeDisplayName(_ type: HKObjectType) -> String {
+        switch type {
+        case HKQuantityType.quantityType(forIdentifier: .stepCount):
+            return "Steps"
+        case HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned):
+            return "Active Calories"
+        case HKQuantityType.quantityType(forIdentifier: .heartRate):
+            return "Heart Rate"
+        case HKQuantityType.quantityType(forIdentifier: .bodyMass):
+            return "Weight"
+        case HKCategoryType.categoryType(forIdentifier: .sleepAnalysis):
+            return "Sleep"
+        case HKWorkoutType.workoutType():
+            return "Workouts"
+        default:
+            return "Unknown"
+        }
+    }
+    
+    private func getStatusDisplayName(_ status: HKAuthorizationStatus) -> String {
+        switch status {
+        case .sharingAuthorized:
+            return "✅ Authorized"
+        case .sharingDenied:
+            return "❌ Denied"
+        case .notDetermined:
+            return "⏳ Not Determined"
+        @unknown default:
+            return "❓ Unknown"
+        }
+    }
+    
+    func hasRequiredPermissions() -> Bool {
+        // Return current authorization status based on recent data access capability test
+        // This is more reliable than checking permission API on real devices
+        return isAuthorized
+    }
+    
+    func getPermissionStatus(for type: HKObjectType) -> HKAuthorizationStatus {
+        return healthStore.authorizationStatus(for: type)
+    }
+    
     private func updateAuthorizationStatus(isAuthorized: Bool) {
+        // Prevent rapid authorization status switching
+        guard !pendingAuthorizationUpdate else {
+            print("⏸️ Authorization update already pending, skipping...")
+            return
+        }
+        
+        // Check cooldown period
+        if let lastCheck = lastAuthorizationCheck {
+            let timeSinceLastCheck = Date().timeIntervalSince(lastCheck)
+            if timeSinceLastCheck < authorizationCheckCooldown {
+                print("⏸️ Authorization check cooldown active (\(String(format: "%.1f", timeSinceLastCheck))s ago), skipping...")
+                return
+            }
+        }
+        
+        // Only update if status actually changed
+        guard self.isAuthorized != isAuthorized else {
+            print("📱 Authorization status unchanged: \(isAuthorized ? "Connected" : "Not Connected")")
+            return
+        }
+        
         print("📱 Updating HealthKit authorization status: \(isAuthorized ? "Connected" : "Not Connected")")
-        self.isAuthorized = isAuthorized
-        if isAuthorized {
-            self.authorizationStatus = .sharingAuthorized
-        } else {
-            self.authorizationStatus = .notDetermined
+        
+        pendingAuthorizationUpdate = true
+        lastAuthorizationCheck = Date()
+        
+        // Debounce the update slightly to allow for any competing updates
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.isAuthorized = isAuthorized
+            if isAuthorized {
+                self?.authorizationStatus = .sharingAuthorized
+            } else {
+                self?.authorizationStatus = .notDetermined
+            }
+            self?.pendingAuthorizationUpdate = false
+            print("✅ Authorization status update completed: \(isAuthorized ? "Connected" : "Not Connected")")
         }
     }
     

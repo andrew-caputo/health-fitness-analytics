@@ -8,7 +8,7 @@ class NetworkManager: ObservableObject {
     @Published var isOnline = true
     @Published var isAuthenticated = false
     @Published var currentUser: User?
-    private let baseURL = "http://192.168.2.120:8001"
+    private let baseURL = "http://192.168.2.131:8001"
     private var session: URLSession
     private var cancellables = Set<AnyCancellable>()
     
@@ -17,7 +17,8 @@ class NetworkManager: ObservableObject {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 10.0 // 10 second timeout for requests
         config.timeoutIntervalForResource = 30.0 // 30 second timeout for entire resource
-        config.waitsForConnectivity = false // Don't wait indefinitely for network
+        // Remove waitsForConnectivity = false as it causes immediate failures
+        // Default behavior allows reasonable waiting for network connectivity
         
         self.session = URLSession(configuration: config)
         startNetworkMonitoring()
@@ -503,6 +504,79 @@ class NetworkManager: ObservableObject {
         let endpoint = "/api/v1/data-sources/fatsecret/nutrition?start_date=\(dateFormatter.string(from: startDate))&end_date=\(dateFormatter.string(from: endDate))"
         return try await requestWithoutBody(endpoint: endpoint, method: .GET)
     }
+    
+    // MARK: - AI Insights API Methods
+    
+    func fetchHealthScore() async throws -> HealthScoreResponse {
+        let endpoint = "/api/v1/ai/health-score"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchAIInsights() async throws -> InsightsResponse {
+        let endpoint = "/api/v1/ai/insights"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchAIRecommendations() async throws -> RecommendationsResponse {
+        let endpoint = "/api/v1/ai/recommendations"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchAIAnomalies() async throws -> AnomaliesResponse {
+        let endpoint = "/api/v1/ai/anomalies"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchAICorrelations() async throws -> CorrelationsResponse {
+        let endpoint = "/api/v1/ai/correlations"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchAITrends() async throws -> TrendsResponse {
+        let endpoint = "/api/v1/ai/trends"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    // MARK: - Goal Optimization API Methods
+    
+    func fetchGoalRecommendations() async throws -> GoalRecommendationsResponse {
+        let endpoint = "/api/v1/ai/goals/recommendations"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchGoalCoordination() async throws -> GoalCoordinationResponse {
+        let endpoint = "/api/v1/ai/goals/coordinate"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    // MARK: - Achievement API Methods
+    
+    func fetchAchievements() async throws -> AchievementsResponse {
+        let endpoint = "/api/v1/ai/achievements"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchStreaks() async throws -> StreaksResponse {
+        let endpoint = "/api/v1/ai/achievements/streaks"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    // MARK: - Health Coaching API Methods
+    
+    func fetchCoachingMessages() async throws -> CoachingMessagesResponse {
+        let endpoint = "/api/v1/ai/coaching/messages"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchCoachingInterventions() async throws -> InterventionsResponse {
+        let endpoint = "/api/v1/ai/coaching/interventions"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
+    
+    func fetchCoachingProgress() async throws -> ProgressAnalysisResponse {
+        let endpoint = "/api/v1/ai/coaching/progress"
+        return try await requestWithoutBody(endpoint: endpoint, method: .GET)
+    }
 }
 
 // MARK: - Supporting Types
@@ -696,4 +770,292 @@ struct BodyCompositionDataPoint: Codable {
     let value: Double
     let unit: String
     let timestamp: Date
+}
+
+// MARK: - AI Insights Response Models
+
+struct HealthScoreResponse: Codable {
+    let overall_score: Double
+    let component_scores: [ComponentScoreResponse]
+    let last_updated: String
+    let insights: [String]?
+}
+
+struct ComponentScoreResponse: Codable {
+    let category: String
+    let score: Double
+    let status: String?
+    let trend: String?
+}
+
+struct InsightsResponse: Codable {
+    let insights: [HealthInsightResponse]
+    let total_count: Int
+    let high_priority_count: Int
+    let medium_priority_count: Int
+    let low_priority_count: Int
+    let categories: [String: Int]?
+}
+
+struct HealthInsightResponse: Codable {
+    let id: String
+    let insight_type: String
+    let priority: String
+    let title: String
+    let description: String
+    let data_sources: [String]
+    let metrics_involved: [String]
+    let confidence_score: Double
+    let actionable_recommendations: [String]
+    let created_at: String
+    let metadata: [String: String]?
+}
+
+struct RecommendationsResponse: Codable {
+    let recommendations: [RecommendationResponse]
+    let total_count: Int
+}
+
+struct RecommendationResponse: Codable {
+    let id: String
+    let category: String
+    let title: String
+    let description: String
+    let metrics: [String]
+    let confidence: Double
+    let priority: String
+    let actions: [String]
+    let expected_benefit: String
+    let timeframe: String
+    let implementation_difficulty: String?
+}
+
+struct AnomaliesResponse: Codable {
+    let anomalies: [AnomalyResponse]
+    let total_count: Int
+}
+
+struct AnomalyResponse: Codable {
+    let id: String
+    let metric: String
+    let date: String
+    let value: Double
+    let severity: Double
+    let confidence: Double
+    let type: String
+    let description: String
+    let recommendations: [String]
+    let context: [String: String]?
+}
+
+struct CorrelationsResponse: Codable {
+    let correlations: [CorrelationResponse]
+    let total_count: Int
+}
+
+struct CorrelationResponse: Codable {
+    let id: String
+    let metric_1: String
+    let metric_2: String
+    let correlation_coefficient: Double
+    let strength: String
+    let direction: String
+    let description: String
+    let significance: Double
+    let time_period: String
+}
+
+struct TrendsResponse: Codable {
+    let trends: [TrendResponse]
+    let total_count: Int
+}
+
+struct TrendResponse: Codable {
+    let id: String
+    let metric: String
+    let trend_type: String
+    let direction: String
+    let strength: Double
+    let description: String
+    let time_period: String
+    let statistical_significance: Double
+    let projected_continuation: String?
+}
+
+// MARK: - Goal Optimization Response Models
+
+struct GoalRecommendationsResponse: Codable {
+    let recommendations: [GoalRecommendationResponse]
+    let total_count: Int
+}
+
+struct GoalRecommendationResponse: Codable {
+    let id: String
+    let title: String
+    let description: String
+    let category: String
+    let target_value: Double
+    let unit: String
+    let current_value: Double?
+    let confidence: Double
+    let difficulty: String
+    let timeline_weeks: Int
+    let expected_benefits: [String]
+    let prerequisites: [String]?
+}
+
+struct GoalCoordinationResponse: Codable {
+    let coordinated_goals: [CoordinatedGoalResponse]
+    let conflicts: [GoalConflictResponse]?
+    let synergies: [GoalSynergyResponse]?
+}
+
+struct CoordinatedGoalResponse: Codable {
+    let id: String
+    let title: String
+    let priority: Int
+    let interaction_type: String
+}
+
+struct GoalConflictResponse: Codable {
+    let goal_1_id: String
+    let goal_2_id: String
+    let conflict_type: String
+    let severity: Double
+    let resolution_suggestion: String
+}
+
+struct GoalSynergyResponse: Codable {
+    let goal_ids: [String]
+    let synergy_type: String
+    let benefit_multiplier: Double
+    let description: String
+}
+
+// MARK: - Achievement Response Models
+
+struct AchievementsResponse: Codable {
+    let achievements: [AchievementResponse]
+    let total_count: Int
+    let completed_count: Int
+    let in_progress_count: Int
+}
+
+struct AchievementResponse: Codable {
+    let id: String
+    let title: String
+    let description: String
+    let type: String
+    let category: String
+    let threshold: Double
+    let current_value: Double
+    let is_completed: Bool
+    let completed_at: String?
+    let badge_level: String
+    let points: Int
+    let rarity: String
+    let progress_percentage: Double
+}
+
+struct StreaksResponse: Codable {
+    let streaks: [StreakResponse]
+    let total_count: Int
+    let active_count: Int
+}
+
+struct StreakResponse: Codable {
+    let id: String
+    let type: String
+    let title: String
+    let description: String
+    let current_count: Int
+    let longest_count: Int
+    let start_date: String
+    let last_update: String
+    let is_active: Bool
+    let milestones: [StreakMilestoneResponse]
+}
+
+struct StreakMilestoneResponse: Codable {
+    let id: String
+    let count: Int
+    let title: String
+    let reward: String
+    let is_completed: Bool
+    let completed_at: String?
+}
+
+// MARK: - Health Coaching Response Models
+
+struct CoachingMessagesResponse: Codable {
+    let messages: [CoachingMessageResponse]
+    let total_count: Int
+    let unread_count: Int
+}
+
+struct CoachingMessageResponse: Codable {
+    let id: String
+    let coaching_type: String
+    let title: String
+    let message: String
+    let content: String
+    let timing: String
+    let timestamp: String
+    let priority: Int
+    let target_metrics: [String]
+    let actionable_steps: [String]
+    let expected_outcome: String
+    let follow_up_days: Int
+    let personalization_factors: [String]
+    let focus_areas: [String]
+    let is_read: Bool
+}
+
+struct InterventionsResponse: Codable {
+    let interventions: [InterventionResponse]
+    let total_count: Int
+    let active_count: Int
+}
+
+struct InterventionResponse: Codable {
+    let id: String
+    let title: String
+    let description: String
+    let intervention_type: String
+    let target_behavior: String
+    let current_pattern: String
+    let desired_pattern: String
+    let strategy: String
+    let implementation_steps: [String]
+    let success_metrics: [String]
+    let duration_days: Int
+    let difficulty_level: String
+    let progress: Double
+    let start_date: String?
+    let completion_date: String?
+    let is_active: Bool
+}
+
+struct ProgressAnalysisResponse: Codable {
+    let id: String
+    let analysis_date: String
+    let timeframe: String
+    let summary: String
+    let overall_score: Double
+    let key_metrics: [MetricProgressResponse]
+    let improvements: [String]
+    let areas_for_focus: [String]
+    let trend_analysis: String
+    let next_steps: [String]
+}
+
+struct MetricProgressResponse: Codable {
+    let metric: String
+    let current_value: String
+    let previous_value: String
+    let change: Double
+    let is_improvement: Bool
+    let change_text: String
+    let trend: String?
+    let target_value: String?
 } 
