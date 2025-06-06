@@ -635,10 +635,11 @@ class AIInsightsViewModel: ObservableObject {
     
     private func loadHealthScore(timeframe: TimeFrame) async throws -> HealthScore {
         // Real backend integration - replace mock data
-        print("🏥 Fetching real health score from backend API...")
+        let daysBack = timeframeToDays(timeframe)
+        print("🏥 Fetching real health score from backend API for \(daysBack) days...")
         do {
             let response = try await withTimeout(seconds: 10) { [self] in
-                try await self.networkManager.fetchHealthScore()
+                try await self.networkManager.fetchHealthScore(daysBack: daysBack)
             }
             
             let componentScores = response.component_scores.map { component in
@@ -794,6 +795,19 @@ class AIInsightsViewModel: ObservableObject {
             print("❌ Error fetching anomalies: \(error)")
             print("📱 Using fallback: No anomalies detected")
             return []
+        }
+    }
+    
+    private func timeframeToDays(_ timeframe: TimeFrame) -> Int {
+        switch timeframe {
+        case .week:
+            return 7
+        case .month:
+            return 30
+        case .quarter:
+            return 90
+        case .year:
+            return 365
         }
     }
     

@@ -170,7 +170,7 @@ struct DashboardHomeView: View {
                         
                         NavigationLink(destination: HealthChartsView(initialMetric: .heartRate)) {
                             QuickStatCard(
-                                title: "Heart Rate",
+                                title: "Resting Heart Rate",
                                 value: healthDataManager.currentHeartRate > 0 ? "\(healthDataManager.currentHeartRate) BPM" : "No data",
                                 subtitle: displaySourceName(healthDataManager.userPreferences?.heart_health_source ?? healthDataManager.userPreferences?.activity_source),
                                 icon: "heart.fill",
@@ -180,11 +180,11 @@ struct DashboardHomeView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .simultaneousGesture(TapGesture().onEnded {
-                            NSLog("🚨 CARD TAP DETECTED - Heart Rate card was pressed")
-                            print("🚨 === HEART RATE CARD TAPPED ===")
-                            NSLog("🚨 === HEART RATE CARD TAPPED ===")
-                            print("📊 Navigating to heart rate detail in HealthChartsView...")
-                            NSLog("📊 Navigating to heart rate detail in HealthChartsView...")
+                            NSLog("🚨 CARD TAP DETECTED - Resting Heart Rate card was pressed")
+                            print("🚨 === RESTING HEART RATE CARD TAPPED ===")
+                            NSLog("🚨 === RESTING HEART RATE CARD TAPPED ===")
+                            print("📊 Navigating to resting heart rate detail in HealthChartsView...")
+                            NSLog("📊 Navigating to resting heart rate detail in HealthChartsView...")
                         })
                         
                         NavigationLink(destination: HealthChartsView(initialMetric: .activeEnergy)) {

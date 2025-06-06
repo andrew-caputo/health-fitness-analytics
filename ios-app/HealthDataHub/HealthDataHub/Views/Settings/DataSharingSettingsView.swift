@@ -320,7 +320,7 @@ struct HealthDataToggleRow: View {
     private func descriptionForDataType(_ dataType: PrivacySettings.HealthDataType) -> String {
         switch dataType {
         case .steps: return "Daily step count and walking distance"
-        case .heartRate: return "Heart rate measurements and variability"
+                    case .heartRate: return "Resting heart rate measurements and variability"
         case .sleep: return "Sleep duration, quality, and patterns"
         case .weight: return "Body weight and BMI measurements"
         case .nutrition: return "Calorie intake and nutritional information"

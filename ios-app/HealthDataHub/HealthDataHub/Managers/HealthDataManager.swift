@@ -366,7 +366,7 @@ class HealthDataManager: ObservableObject {
         case HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned):
             return "Active Calories"
         case HKQuantityType.quantityType(forIdentifier: .heartRate):
-            return "Heart Rate"
+            return "Resting Heart Rate"
         case HKQuantityType.quantityType(forIdentifier: .bodyMass):
             return "Weight"
         case HKCategoryType.categoryType(forIdentifier: .sleepAnalysis):
@@ -902,30 +902,63 @@ class HealthDataManager: ObservableObject {
     private func readCurrentHeartRateFromHealthKit(startDate: Date, endDate: Date) async {
         print("❤️ Reading heart rate from HealthKit for date range: \(startDate) to \(endDate)")
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
-                print("❌ Heart rate type not available")
-                continuation.resume()
+            // Prioritize resting heart rate, fallback to general heart rate (matching backend logic)
+            guard let restingHeartRateType = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) else {
+                print("⚠️ Resting heart rate type not available, falling back to general heart rate")
+                self.readCurrentGeneralHeartRateFromHealthKit(startDate: startDate, endDate: endDate, continuation: continuation)
                 return
             }
             
             let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
             let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
-            let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            
+            // First try to get resting heart rate
+            let restingQuery = HKSampleQuery(sampleType: restingHeartRateType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        print("❌ Error reading heart rate: \(error.localizedDescription)")
-                    } else if let heartRateSample = samples?.first as? HKQuantitySample {
-                        let heartRate = heartRateSample.quantity.doubleValue(for: HKUnit(from: "count/min"))
-                        print("✅ Successfully read heart rate: \(Int(heartRate)) BPM")
-                        self.currentHeartRate = Int(heartRate)
+                        print("❌ Error reading resting heart rate: \(error.localizedDescription)")
+                        // Fallback to general heart rate
+                        self.readCurrentGeneralHeartRateFromHealthKit(startDate: startDate, endDate: endDate, continuation: continuation)
+                    } else if let restingHRSample = samples?.first as? HKQuantitySample {
+                        let restingHeartRate = restingHRSample.quantity.doubleValue(for: HKUnit(from: "count/min"))
+                        print("✅ Successfully read resting heart rate: \(Int(restingHeartRate)) BPM")
+                        self.currentHeartRate = Int(restingHeartRate)
+                        continuation.resume()
                     } else {
-                        print("⚠️ No heart rate data found")
+                        print("⚠️ No resting heart rate data found, falling back to general heart rate")
+                        // Fallback to general heart rate
+                        self.readCurrentGeneralHeartRateFromHealthKit(startDate: startDate, endDate: endDate, continuation: continuation)
                     }
-                    continuation.resume()
                 }
             }
-            healthStore.execute(query)
+            healthStore.execute(restingQuery)
         }
+    }
+    
+    private func readCurrentGeneralHeartRateFromHealthKit(startDate: Date, endDate: Date, continuation: CheckedContinuation<Void, Never>) {
+        guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
+            print("❌ General heart rate type not available")
+            continuation.resume()
+            return
+        }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: 1, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ Error reading general heart rate: \(error.localizedDescription)")
+                } else if let heartRateSample = samples?.first as? HKQuantitySample {
+                    let heartRate = heartRateSample.quantity.doubleValue(for: HKUnit(from: "count/min"))
+                    print("✅ Successfully read general heart rate: \(Int(heartRate)) BPM")
+                    self.currentHeartRate = Int(heartRate)
+                } else {
+                    print("⚠️ No general heart rate data found")
+                }
+                continuation.resume()
+            }
+        }
+        healthStore.execute(query)
     }
     
     private func readLastNightSleepFromHealthKit(startDate: Date, endDate: Date) async {
@@ -1082,7 +1115,7 @@ class HealthDataManager: ObservableObject {
                         timestamp: "30 minutes ago"
                     ),
                     ConnectedHealthApp.DataPoint(
-                        type: "Heart Rate",
+                        type: "Resting Heart Rate",
                         value: "165 bpm avg",
                         timestamp: "30 minutes ago"
                     )
@@ -1128,7 +1161,7 @@ class HealthDataManager: ObservableObject {
                         timestamp: "5 minutes ago"
                     ),
                     ConnectedHealthApp.DataPoint(
-                        type: "Heart Rate",
+                        type: "Resting Heart Rate",
                         value: "72 bpm",
                         timestamp: "5 minutes ago"
                     ),

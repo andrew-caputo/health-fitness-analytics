@@ -125,8 +125,8 @@ class HealthCoachViewModel: ObservableObject {
                     expectedOutcome: message.expected_outcome,
                     followUpDays: message.follow_up_days,
                     personalizationFactors: message.personalization_factors,
-                    focusAreas: message.focus_areas,
-                    isRead: message.is_read
+                    focusAreas: message.focus_areas ?? [],
+                    isRead: message.is_read ?? false
                 )
             }
             
@@ -183,7 +183,7 @@ class HealthCoachViewModel: ObservableObject {
             }
             
             // Convert backend progress analysis to app model
-            let keyMetrics = response.key_metrics.map { metric in
+            let keyMetrics = response.key_metrics?.map { metric in
                 MetricProgress(
                     metric: metric.metric,
                     currentValue: metric.current_value,
@@ -192,16 +192,16 @@ class HealthCoachViewModel: ObservableObject {
                     isImprovement: metric.is_improvement,
                     changeText: metric.change_text
                 )
-            }
+            } ?? []
             
             let progressAnalysis = ProgressAnalysis(
-                id: response.id,
+                id: response.id ?? UUID().uuidString,
                 analysisDate: parseDate(response.analysis_date) ?? Date(),
-                timeframe: response.timeframe,
-                summary: response.summary,
-                overallScore: Int(response.overall_score),
+                timeframe: response.timeframe ?? "30 days",
+                summary: response.summary ?? response.progress_summary ?? "No progress data available",
+                overallScore: Int(response.overall_score ?? 0.0),
                 keyMetrics: keyMetrics,
-                recommendations: response.improvements,
+                recommendations: response.improvements ?? [],
                 focusAreas: response.areas_for_focus,
                 nextAnalysisDate: Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
             )

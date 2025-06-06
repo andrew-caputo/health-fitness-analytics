@@ -316,7 +316,7 @@ struct TrendsAnalysisView: View {
                 )
                 
                 PatternCard(
-                    title: "Heart Rate",
+                    title: "Resting Heart Rate",
                     description: "Stable resting HR",
                     icon: "heart.fill",
                     color: .red

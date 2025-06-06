@@ -163,7 +163,8 @@ class HealthInsightsEngine:
         db: Session = None
     ) -> Optional[HealthScore]:
         """
-        Calculate comprehensive health score for a user
+        Calculate comprehensive health score with dynamic metric inclusion
+        Only includes metrics with available data and prompts users for missing data sources
         
         Args:
             user_id: User ID to calculate score for
@@ -177,21 +178,79 @@ class HealthInsightsEngine:
             db = next(get_db())
             
         try:
+            # Always try to get data for the EXACT requested period first
             health_data = self._get_user_health_data(user_id, days_back, db)
+            actual_days_used = days_back
             
+            # Check if we have ANY meaningful data for the requested period
+            if not health_data.empty and len(health_data) >= 3:  # Lowered threshold
+                unique_metrics = health_data['metric_type'].nunique()
+                unique_days = health_data['recorded_at'].dt.date.nunique()
+                
+                # Use requested period if we have at least some data
+                if unique_metrics >= 1 and unique_days >= 2:  # Much more permissive
+                    logger.info(f"Using EXACT requested {days_back} days with {len(health_data)} records, {unique_metrics} metrics, {unique_days} days")
+                    # Keep the requested period to ensure time-period sensitivity
+                else:
+                    logger.info(f"Minimal data for {days_back} days, using intelligent fallback")
+                    health_data, actual_days_used = self._get_optimal_data_range(user_id, days_back, db)
+            else:
+                logger.info(f"No data for {days_back} days, using intelligent fallback")
+                health_data, actual_days_used = self._get_optimal_data_range(user_id, days_back, db)
+                
             if health_data.empty:
+                logger.warning(f"No health data found for user {user_id} even with fallback")
                 return None
             
-            # Calculate component scores
-            activity_score = self._calculate_activity_score(health_data)
-            sleep_score = self._calculate_sleep_score(health_data)
-            nutrition_score = self._calculate_nutrition_score(health_data)
-            heart_health_score = self._calculate_heart_health_score(health_data)
-            consistency_score = self._calculate_consistency_score(health_data)
-            trend_score = self._calculate_trend_score(health_data)
+            # Identify available metrics and calculate scores ONLY for available data
+            available_metrics = self._identify_available_metrics(health_data)
+            logger.info(f"Available metrics for scoring: {list(available_metrics.keys())}")
             
-            # Calculate weighted overall score
-            weights = {
+            component_scores = {}
+            missing_metrics = []
+            
+            # Activity Score
+            if available_metrics.get('activity', False):
+                component_scores['activity'] = self._calculate_activity_score(health_data, days_back)
+            else:
+                missing_metrics.append('activity')
+            
+            # Sleep Score  
+            if available_metrics.get('sleep', False):
+                component_scores['sleep'] = self._calculate_sleep_score(health_data, days_back)
+            else:
+                missing_metrics.append('sleep')
+            
+            # Nutrition Score
+            if available_metrics.get('nutrition', False):
+                component_scores['nutrition'] = self._calculate_nutrition_score(health_data, days_back)
+            else:
+                missing_metrics.append('nutrition')
+            
+            # Heart Health Score
+            if available_metrics.get('heart_health', False):
+                component_scores['heart_health'] = self._calculate_heart_health_score(health_data, days_back)
+            else:
+                missing_metrics.append('heart_health')
+            
+            # Consistency Score (always available if we have any data)
+            component_scores['consistency'] = self._calculate_consistency_score(health_data, days_back)
+            
+            # Trend Score (always available if we have any data)
+            component_scores['trend'] = self._calculate_trend_score(health_data, days_back)
+            
+            # Log missing metrics for user prompting
+            if missing_metrics:
+                logger.info(f"Missing metrics (will prompt user): {missing_metrics}")
+            
+            # Ensure all component scores are valid numbers
+            for key, score in component_scores.items():
+                if pd.isna(score) or not np.isfinite(score):
+                    component_scores[key] = 50.0
+            
+            # Calculate weighted overall score ONLY from available metrics
+            # Dynamic weight redistribution based on available metrics
+            base_weights = {
                 'activity': 0.25,
                 'sleep': 0.20,
                 'nutrition': 0.20,
@@ -200,23 +259,42 @@ class HealthInsightsEngine:
                 'trend': 0.10
             }
             
-            overall_score = (
-                activity_score * weights['activity'] +
-                sleep_score * weights['sleep'] +
-                nutrition_score * weights['nutrition'] +
-                heart_health_score * weights['heart_health'] +
-                consistency_score * weights['consistency'] +
-                trend_score * weights['trend']
+            # Calculate total weight from available metrics
+            available_weight = sum(base_weights[metric] for metric in component_scores.keys())
+            
+            # Redistribute weights proportionally
+            adjusted_weights = {}
+            for metric in component_scores.keys():
+                adjusted_weights[metric] = base_weights[metric] / available_weight
+            
+            # Calculate overall score from available metrics only
+            overall_score = sum(
+                component_scores[metric] * adjusted_weights[metric] 
+                for metric in component_scores.keys()
             )
             
+            # Final NaN check for overall score
+            if pd.isna(overall_score) or not np.isfinite(overall_score):
+                overall_score = 50.0
+            
+            # Fill missing component scores with None to indicate unavailable
+            final_component_scores = {
+                'activity': component_scores.get('activity', None),
+                'sleep': component_scores.get('sleep', None),
+                'nutrition': component_scores.get('nutrition', None),
+                'heart_health': component_scores.get('heart_health', None),
+                'consistency': component_scores.get('consistency', None),
+                'trend': component_scores.get('trend', None)
+            }
+            
             return HealthScore(
-                overall_score=round(overall_score, 1),
-                activity_score=round(activity_score, 1),
-                sleep_score=round(sleep_score, 1),
-                nutrition_score=round(nutrition_score, 1),
-                heart_health_score=round(heart_health_score, 1),
-                consistency_score=round(consistency_score, 1),
-                trend_score=round(trend_score, 1),
+                overall_score=round(float(overall_score), 1),
+                activity_score=round(float(final_component_scores['activity']), 1) if final_component_scores['activity'] is not None else None,
+                sleep_score=round(float(final_component_scores['sleep']), 1) if final_component_scores['sleep'] is not None else None,
+                nutrition_score=round(float(final_component_scores['nutrition']), 1) if final_component_scores['nutrition'] is not None else None,
+                heart_health_score=round(float(final_component_scores['heart_health']), 1) if final_component_scores['heart_health'] is not None else None,
+                consistency_score=round(float(final_component_scores['consistency']), 1) if final_component_scores['consistency'] is not None else None,
+                trend_score=round(float(final_component_scores['trend']), 1) if final_component_scores['trend'] is not None else None,
                 last_updated=datetime.utcnow()
             )
             
@@ -265,6 +343,54 @@ class HealthInsightsEngine:
             df['value'] = pd.to_numeric(df['value'], errors='coerce')
         
         return df
+    
+    def _get_optimal_data_range(
+        self, 
+        user_id: int, 
+        requested_days: int, 
+        db: Session
+    ) -> Tuple[pd.DataFrame, int]:
+        """
+        Get optimal data range by trying progressively larger time periods
+        
+        Args:
+            user_id: User ID
+            requested_days: Originally requested days
+            db: Database session
+            
+        Returns:
+            Tuple of (DataFrame, actual_days_used)
+        """
+        try:
+            # Try progressively larger time periods: 7, 14, 30, 60, 90, 180, 365
+            fallback_periods = [7, 14, 30, 60, 90, 180, 365]
+            
+            # Start from the requested period or the next larger one
+            periods_to_try = [p for p in fallback_periods if p >= requested_days]
+            if not periods_to_try:
+                periods_to_try = [365]  # Fallback to maximum
+            
+            for days in periods_to_try:
+                logger.info(f"Trying {days} days of data for user {user_id}")
+                health_data = self._get_user_health_data(user_id, days, db)
+                
+                # Check if we have sufficient data diversity
+                if not health_data.empty and len(health_data) >= 5:
+                    unique_metrics = health_data['metric_type'].nunique()
+                    unique_days = health_data['recorded_at'].dt.date.nunique()
+                    
+                    # Need at least 2 different metrics and 3 different days
+                    if unique_metrics >= 2 and unique_days >= 3:
+                        logger.info(f"Found sufficient data using {days} days ({len(health_data)} records, {unique_metrics} metrics, {unique_days} days)")
+                        return health_data, days
+                
+            # If still no good data, return whatever we can get from maximum period
+            health_data = self._get_user_health_data(user_id, 365, db)
+            return health_data, 365
+            
+        except Exception as e:
+            logger.error(f"Error in optimal data range detection: {e}")
+            return pd.DataFrame(), requested_days
     
     def _generate_correlation_insights(
         self, 
@@ -472,8 +598,8 @@ class HealthInsightsEngine:
         
         return insights
     
-    def _calculate_activity_score(self, health_data: pd.DataFrame) -> float:
-        """Calculate activity score based on steps, workouts, and active energy"""
+    def _calculate_activity_score(self, health_data: pd.DataFrame, days_analyzed: int = 30) -> float:
+        """Calculate activity score with temporal pattern analysis for time-period sensitivity"""
         try:
             activity_metrics = health_data[
                 health_data['metric_type'].isin(['activity_steps', 'activity_workouts', 'activity_active_energy'])
@@ -482,123 +608,556 @@ class HealthInsightsEngine:
             if activity_metrics.empty:
                 return 50.0  # Default score
             
-            # Calculate based on consistency and targets
+            # Calculate based on temporal patterns and recency weighting
             steps_data = activity_metrics[activity_metrics['metric_type'] == 'activity_steps']
             if not steps_data.empty:
-                avg_steps = steps_data['value'].mean()
-                steps_score = min(100, (avg_steps / 10000) * 100)  # 10k steps = 100%
+                # Sort by date for temporal analysis
+                steps_data = steps_data.sort_values('recorded_at')
+                steps_values = steps_data['value'].values
+                
+                # Calculate recency-weighted average based on time period
+                if days_analyzed <= 7:
+                    # Recent week - heavy weight on recent days
+                    weights = np.linspace(0.5, 2.0, len(steps_values))
+                    target_steps = 10000
+                    recency_factor = 1.3
+                elif days_analyzed <= 30:
+                    # Month view - moderate recency weighting  
+                    weights = np.linspace(0.7, 1.5, len(steps_values))
+                    target_steps = 9500
+                    recency_factor = 1.1
+                else:
+                    # Longer periods - focus on overall consistency
+                    weights = np.linspace(0.8, 1.2, len(steps_values))
+                    target_steps = 9000
+                    recency_factor = 0.95
+                
+                # Calculate weighted average
+                if len(weights) == len(steps_values):
+                    weighted_avg_steps = np.average(steps_values, weights=weights)
+                else:
+                    weighted_avg_steps = np.mean(steps_values)
+                
+                # Calculate temporal variability score
+                if len(steps_values) > 1:
+                    std_steps = np.std(steps_values)
+                    cv = std_steps / max(weighted_avg_steps, 1)  # Coefficient of variation
+                    variability_penalty = min(10, cv * 20)  # Penalize high variability
+                else:
+                    variability_penalty = 0
+                
+                # Base score with temporal adjustments
+                base_score = (weighted_avg_steps / target_steps) * 100
+                temporal_score = base_score * recency_factor - variability_penalty
+                steps_score = max(30, min(100, temporal_score))
             else:
                 steps_score = 50
             
-            # Add workout frequency bonus
+            # Add workout frequency bonus with time-period scaling
             workouts_data = activity_metrics[activity_metrics['metric_type'] == 'activity_workouts']
-            workout_bonus = min(20, len(workouts_data) * 2)  # Up to 20 points for workouts
+            workout_frequency = len(workouts_data) / max(1, days_analyzed) * 7  # Workouts per week
+            workout_bonus = min(15, workout_frequency * 4)  # Up to 15 points for workouts
             
             return min(100, steps_score + workout_bonus)
             
         except Exception:
             return 50.0
     
-    def _calculate_sleep_score(self, health_data: pd.DataFrame) -> float:
-        """Calculate sleep score based on duration and consistency"""
+    def _calculate_sleep_score(self, health_data: pd.DataFrame, days_analyzed: int = 30) -> float:
+        """Calculate sleep score with enhanced sensitivity and time-period awareness"""
         try:
             sleep_data = health_data[health_data['metric_type'] == 'sleep_duration']
             
             if sleep_data.empty:
                 return 50.0
             
+            # Sort by date for temporal analysis
+            sleep_data = sleep_data.sort_values('recorded_at')
             avg_sleep = sleep_data['value'].mean()
-            sleep_consistency = 100 - (sleep_data['value'].std() * 10)  # Penalize inconsistency
+            std_sleep = sleep_data['value'].std()
             
-            # Optimal sleep is 7-9 hours
-            if 7 <= avg_sleep <= 9:
-                duration_score = 100
-            elif avg_sleep < 7:
-                duration_score = (avg_sleep / 7) * 100
+            # Check for NaN values
+            if pd.isna(avg_sleep):
+                return 50.0
+            
+            # Enhanced sleep duration scoring with finer gradations
+            if 7.5 <= avg_sleep <= 8.5:  # Ideal range (7.5-8.5 hours)
+                duration_score = 100.0
+            elif 7.0 <= avg_sleep < 7.5:  # Good but slightly short
+                duration_score = 85.0 + ((avg_sleep - 7.0) / 0.5) * 15.0  # 85-100
+            elif 8.5 < avg_sleep <= 9.0:  # Good but slightly long
+                duration_score = 85.0 + ((9.0 - avg_sleep) / 0.5) * 15.0  # 85-100
+            elif 6.5 <= avg_sleep < 7.0:  # Moderately short
+                duration_score = 65.0 + ((avg_sleep - 6.5) / 0.5) * 20.0  # 65-85
+            elif 9.0 < avg_sleep <= 9.5:  # Moderately long
+                duration_score = 65.0 + ((9.5 - avg_sleep) / 0.5) * 20.0  # 65-85
+            elif 6.0 <= avg_sleep < 6.5:  # Short sleep
+                duration_score = 40.0 + ((avg_sleep - 6.0) / 0.5) * 25.0  # 40-65
+            elif 9.5 < avg_sleep <= 10.0:  # Long sleep
+                duration_score = 40.0 + ((10.0 - avg_sleep) / 0.5) * 25.0  # 40-65
+            elif avg_sleep < 6.0:  # Very short
+                duration_score = max(20.0, 40.0 * (avg_sleep / 6.0))  # 20-40
+            else:  # avg_sleep > 10.0 - Very long
+                duration_score = max(20.0, 40.0 - ((avg_sleep - 10.0) * 5.0))  # Diminishing
+            
+            # Enhanced consistency scoring with time-period sensitivity
+            if pd.isna(std_sleep) or len(sleep_data) == 1:
+                consistency_score = 100.0  # Perfect consistency for single data point
             else:
-                duration_score = max(50, 100 - ((avg_sleep - 9) * 10))
+                # Calculate coefficient of variation (more meaningful than just std dev)
+                cv = std_sleep / avg_sleep if avg_sleep > 0 else 1.0
+                
+                # Base consistency score (lower CV = higher consistency)
+                base_consistency = max(0, 100 - (cv * 100))
+                
+                # Time-period specific adjustments
+                if days_analyzed <= 7:
+                    # Weekly view - stricter consistency requirements (daily variations matter more)
+                    consistency_score = base_consistency * 1.2  # Amplify consistency importance
+                elif days_analyzed <= 30:
+                    # Monthly view - moderate consistency requirements
+                    consistency_score = base_consistency * 1.1
+                else:
+                    # Longer periods - slight penalty for high variation
+                    consistency_score = base_consistency * 0.95
+                
+                # Ensure within bounds
+                consistency_score = min(100, max(10, consistency_score))
             
-            return (duration_score * 0.7 + sleep_consistency * 0.3)
+            # Temporal pattern analysis for additional scoring
+            temporal_bonus = 0.0
+            if len(sleep_data) >= 7:  # Need sufficient data for temporal analysis
+                sleep_data['date'] = pd.to_datetime(sleep_data['recorded_at']).dt.date
+                daily_sleep = sleep_data.groupby('date')['value'].mean()
+                
+                if days_analyzed <= 7:
+                    # Week view - reward improving recent sleep
+                    if len(daily_sleep) >= 4:
+                        recent_sleep = daily_sleep.tail(3).mean()
+                        older_sleep = daily_sleep.head(3).mean()
+                        if recent_sleep > older_sleep:
+                            temporal_bonus = min(10, (recent_sleep - older_sleep) * 5)
+                elif days_analyzed <= 30:
+                    # Month view - reward sustained good sleep
+                    good_sleep_days = len(daily_sleep[(daily_sleep >= 7.0) & (daily_sleep <= 9.0)])
+                    good_sleep_ratio = good_sleep_days / len(daily_sleep)
+                    if good_sleep_ratio > 0.7:
+                        temporal_bonus = (good_sleep_ratio - 0.7) * 20  # Up to 6 points bonus
+                else:
+                    # Long-term: Reward long-term stability with good average
+                    if avg_sleep >= 7.0 and avg_sleep <= 9.0 and cv < 0.15:  # Stable and good
+                        temporal_bonus = 8.0
             
-        except Exception:
+            # Weighted final score with period-sensitive weighting
+            if days_analyzed <= 7:
+                # Week: Emphasize recent consistency and patterns
+                final_score = (duration_score * 0.6 + consistency_score * 0.35 + temporal_bonus * 0.05)
+            elif days_analyzed <= 30:
+                # Month: Balance all factors
+                final_score = (duration_score * 0.65 + consistency_score * 0.3 + temporal_bonus * 0.05)
+            else:
+                # Long-term: Emphasize overall duration quality
+                final_score = (duration_score * 0.7 + consistency_score * 0.25 + temporal_bonus * 0.05)
+            
+            # Ensure final score is valid and within bounds
+            if pd.isna(final_score):
+                return 50.0
+            
+            return min(100.0, max(20.0, float(final_score)))
+            
+        except Exception as e:
+            logger.error(f"Error calculating sleep score: {e}")
             return 50.0
     
-    def _calculate_nutrition_score(self, health_data: pd.DataFrame) -> float:
-        """Calculate nutrition score based on calorie intake and balance"""
+    def _calculate_nutrition_score(self, health_data: pd.DataFrame, days_analyzed: int = 30) -> float:
+        """Calculate nutrition score with enhanced analysis of intake quality, balance, and time-period sensitivity"""
         try:
             nutrition_data = health_data[
-                health_data['metric_type'].isin(['nutrition_calories', 'nutrition_protein', 'nutrition_carbs'])
+                health_data['metric_type'].isin(['nutrition_calories', 'nutrition_protein', 'nutrition_carbs', 'nutrition_fat'])
             ]
             
             if nutrition_data.empty:
                 return 50.0
             
-            # Basic scoring based on data availability and consistency
+            # Analyze calorie intake with time-period specific targets
             calories_data = nutrition_data[nutrition_data['metric_type'] == 'nutrition_calories']
-            if not calories_data.empty:
-                consistency = 100 - (calories_data['value'].std() / calories_data['value'].mean() * 100)
-                return max(50, min(100, consistency))
+            if calories_data.empty:
+                return 50.0
             
-            return 60.0  # Default for having some nutrition data
+            # Sort by date for temporal analysis
+            calories_data = calories_data.sort_values('recorded_at')
+            calories_values = calories_data['value'].values
+            avg_calories = np.mean(calories_values)
+            std_calories = np.std(calories_values)
             
-        except Exception:
+            # Time-period specific calorie adequacy scoring
+            if days_analyzed <= 7:
+                # Week view - focus on recent intake patterns
+                target_calories = 2000  # Base target
+                adequacy_tolerance = 300  # ±300 calories for optimal
+                consistency_weight = 0.4
+            elif days_analyzed <= 30:
+                # Month view - balanced long-term intake assessment
+                target_calories = 2000
+                adequacy_tolerance = 250  # Stricter tolerance for month
+                consistency_weight = 0.35
+            else:
+                # Long-term view - emphasize sustained healthy patterns
+                target_calories = 2000
+                adequacy_tolerance = 200  # Strictest tolerance for long-term
+                consistency_weight = 0.3
+            
+            # Calorie adequacy score (50% of total nutrition score)
+            calorie_deficit = abs(avg_calories - target_calories)
+            if calorie_deficit <= adequacy_tolerance:
+                adequacy_score = 100.0  # Optimal range
+            elif calorie_deficit <= adequacy_tolerance * 2:
+                # Moderate deviation - gradual penalty
+                adequacy_score = 85.0 - ((calorie_deficit - adequacy_tolerance) / adequacy_tolerance * 25.0)
+            elif calorie_deficit <= adequacy_tolerance * 3:
+                # Significant deviation
+                adequacy_score = 60.0 - ((calorie_deficit - adequacy_tolerance * 2) / adequacy_tolerance * 20.0)
+            else:
+                # Major deviation
+                adequacy_score = max(30.0, 40.0 - (calorie_deficit - adequacy_tolerance * 3) / 100)
+            
+            # Consistency score based on coefficient of variation
+            if len(calories_values) == 1:
+                consistency_score = 100.0
+            else:
+                cv = std_calories / max(avg_calories, 1)  # Coefficient of variation
+                
+                # Time-period specific consistency analysis
+                if days_analyzed <= 7:
+                    # Week: More tolerance for day-to-day variation
+                    base_consistency = max(0, 100 - (cv * 80))
+                elif days_analyzed <= 30:
+                    # Month: Moderate consistency expectations
+                    base_consistency = max(0, 100 - (cv * 100))
+                else:
+                    # Long-term: Higher consistency expectations
+                    base_consistency = max(0, 100 - (cv * 120))
+                
+                consistency_score = min(100, max(20, base_consistency))
+            
+            # Macro balance analysis (when available)
+            protein_data = nutrition_data[nutrition_data['metric_type'] == 'nutrition_protein']
+            carbs_data = nutrition_data[nutrition_data['metric_type'] == 'nutrition_carbs']
+            fat_data = nutrition_data[nutrition_data['metric_type'] == 'nutrition_fat']
+            
+            balance_score = 70.0  # Default when macro data not available
+            if not protein_data.empty and not carbs_data.empty:
+                avg_protein = protein_data['value'].mean()
+                avg_carbs = carbs_data['value'].mean()
+                
+                # Calculate protein percentage of total calories (4 cal/g protein, 4 cal/g carbs)
+                protein_calories = avg_protein * 4
+                carbs_calories = avg_carbs * 4
+                total_macro_calories = protein_calories + carbs_calories
+                
+                if total_macro_calories > 0:
+                    protein_percent = (protein_calories / total_macro_calories) * 100
+                    
+                    # Optimal protein range: 15-25% of calories
+                    if 15 <= protein_percent <= 25:
+                        balance_score = 100.0
+                    elif 10 <= protein_percent < 15 or 25 < protein_percent <= 30:
+                        balance_score = 85.0
+                    elif 8 <= protein_percent < 10 or 30 < protein_percent <= 35:
+                        balance_score = 70.0
+                    else:
+                        balance_score = 50.0
+            
+            # Temporal pattern analysis
+            temporal_bonus = 0.0
+            if len(calories_values) >= 7:
+                calories_data['date'] = pd.to_datetime(calories_data['recorded_at']).dt.date
+                daily_calories = calories_data.groupby('date')['value'].mean()
+                
+                if days_analyzed <= 7:
+                    # Week: Reward improving recent intake
+                    if len(daily_calories) >= 4:
+                        recent_avg = daily_calories.tail(3).mean()
+                        if 1800 <= recent_avg <= 2200:  # Recent intake in healthy range
+                            temporal_bonus = 5.0
+                elif days_analyzed <= 30:
+                    # Month: Reward sustained healthy intake
+                    healthy_days = len(daily_calories[(daily_calories >= 1800) & (daily_calories <= 2200)])
+                    healthy_ratio = healthy_days / len(daily_calories)
+                    if healthy_ratio > 0.7:
+                        temporal_bonus = (healthy_ratio - 0.7) * 15  # Up to 4.5 points
+                else:
+                    # Long-term: Reward stability with good averages
+                    if 1900 <= avg_calories <= 2100 and cv < 0.25:  # Stable and healthy
+                        temporal_bonus = 8.0
+            
+            # Weighted final score with time-period specific emphasis
+            if days_analyzed <= 7:
+                # Week: Balance adequacy and recent patterns
+                final_score = (adequacy_score * 0.5 + consistency_score * consistency_weight + 
+                              balance_score * 0.2 + temporal_bonus)
+            elif days_analyzed <= 30:
+                # Month: Emphasize balance and adequacy
+                final_score = (adequacy_score * 0.45 + consistency_score * consistency_weight + 
+                              balance_score * 0.25 + temporal_bonus)
+            else:
+                # Long-term: Focus on sustained quality and balance
+                final_score = (adequacy_score * 0.4 + consistency_score * consistency_weight + 
+                              balance_score * 0.3 + temporal_bonus)
+            
+            # Ensure final score is valid and within bounds
+            if pd.isna(final_score):
+                return 50.0
+            
+            return min(100.0, max(30.0, float(final_score)))
+            
+        except Exception as e:
+            logger.error(f"Error calculating nutrition score: {e}")
             return 50.0
     
-    def _calculate_heart_health_score(self, health_data: pd.DataFrame) -> float:
-        """Calculate heart health score based on heart rate metrics"""
+    def _calculate_heart_health_score(self, health_data: pd.DataFrame, days_analyzed: int = 30) -> float:
+        """Calculate heart health score with enhanced analysis of HR patterns, variability, and time-period sensitivity"""
         try:
             heart_data = health_data[
-                health_data['metric_type'].isin(['heart_rate', 'heart_rate_resting', 'heart_rate_variability'])
+                health_data['metric_type'].isin(['heart_rate', 'resting_heart_rate', 'heart_rate_variability'])
             ]
             
             if heart_data.empty:
                 return 50.0
             
-            # Basic scoring based on data availability
-            resting_hr_data = heart_data[heart_data['metric_type'] == 'heart_rate_resting']
-            if not resting_hr_data.empty:
-                avg_resting_hr = resting_hr_data['value'].mean()
-                # Optimal resting HR is 60-100 bpm
-                if 60 <= avg_resting_hr <= 100:
-                    return 90.0
+            # Prioritize resting heart rate, fallback to general heart rate
+            resting_hr_data = heart_data[heart_data['metric_type'] == 'resting_heart_rate']
+            if resting_hr_data.empty:
+                # Fallback to general heart rate if resting HR not available
+                resting_hr_data = heart_data[heart_data['metric_type'] == 'heart_rate']
+                if resting_hr_data.empty:
+                    return 50.0  # No heart rate data available
+            
+            # Sort by date for temporal analysis
+            resting_hr_data = resting_hr_data.sort_values('recorded_at')
+            hr_values = resting_hr_data['value'].values
+            avg_resting_hr = np.mean(hr_values)
+            std_resting_hr = np.std(hr_values)
+            
+            # Enhanced resting HR scoring with fine gradations
+            if 50 <= avg_resting_hr <= 60:  # Excellent (athlete-level)
+                hr_score = 100.0
+            elif 60 < avg_resting_hr <= 70:  # Very good
+                hr_score = 90.0 + ((70 - avg_resting_hr) / 10) * 10.0  # 90-100
+            elif 70 < avg_resting_hr <= 80:  # Good/normal
+                hr_score = 75.0 + ((80 - avg_resting_hr) / 10) * 15.0  # 75-90
+            elif 80 < avg_resting_hr <= 90:  # Slightly elevated
+                hr_score = 60.0 + ((90 - avg_resting_hr) / 10) * 15.0  # 60-75
+            elif 90 < avg_resting_hr <= 100:  # Elevated
+                hr_score = 45.0 + ((100 - avg_resting_hr) / 10) * 15.0  # 45-60
+            elif avg_resting_hr < 50:  # Bradycardia range (could be concerning or excellent)
+                # Context-dependent: if stable, likely athletic; if inconsistent, concerning
+                if len(hr_values) > 1 and std_resting_hr < 5:
+                    hr_score = 95.0  # Likely athletic
                 else:
-                    return 70.0
+                    hr_score = 70.0  # Potential concern, needs evaluation
+            else:  # > 100 BPM - concerning
+                hr_score = max(30.0, 45.0 - ((avg_resting_hr - 100) * 2.0))
             
-            return 60.0  # Default for having some heart data
+            # HR consistency analysis with time-period sensitivity
+            if len(hr_values) == 1:
+                consistency_score = 90.0  # Single measurement, assume decent consistency
+            else:
+                cv = std_resting_hr / max(avg_resting_hr, 1)  # Coefficient of variation
+                
+                # Time-period specific consistency analysis
+                if days_analyzed <= 7:
+                    # Week: More tolerance for day-to-day HR variation
+                    base_consistency = max(0, 100 - (cv * 200))
+                elif days_analyzed <= 30:
+                    # Month: Moderate consistency expectations
+                    base_consistency = max(0, 100 - (cv * 250))
+                else:
+                    # Long-term: Higher consistency expectations
+                    base_consistency = max(0, 100 - (cv * 300))
+                
+                consistency_score = min(100, max(40, base_consistency))
             
-        except Exception:
+            # Heart Rate Variability analysis (when available)
+            hrv_data = heart_data[heart_data['metric_type'] == 'heart_rate_variability']
+            hrv_score = 70.0  # Default when HRV not available
+            
+            if not hrv_data.empty:
+                avg_hrv = hrv_data['value'].mean()
+                
+                # HRV scoring (higher is generally better for most HRV metrics)
+                if avg_hrv >= 50:  # Excellent HRV
+                    hrv_score = 100.0
+                elif avg_hrv >= 40:  # Very good
+                    hrv_score = 85.0 + ((avg_hrv - 40) / 10) * 15.0  # 85-100
+                elif avg_hrv >= 30:  # Good
+                    hrv_score = 70.0 + ((avg_hrv - 30) / 10) * 15.0  # 70-85
+                elif avg_hrv >= 20:  # Below average
+                    hrv_score = 55.0 + ((avg_hrv - 20) / 10) * 15.0  # 55-70
+                else:  # Poor HRV
+                    hrv_score = max(40.0, 55.0 * (avg_hrv / 20))
+            
+            # Temporal trend analysis
+            temporal_bonus = 0.0
+            if len(hr_values) >= 7:
+                resting_hr_data['date'] = pd.to_datetime(resting_hr_data['recorded_at']).dt.date
+                daily_hr = resting_hr_data.groupby('date')['value'].mean()
+                
+                if days_analyzed <= 7:
+                    # Week: Reward improving recent HR
+                    if len(daily_hr) >= 4:
+                        recent_avg = daily_hr.tail(3).mean()
+                        older_avg = daily_hr.head(3).mean()
+                        if recent_avg < older_avg:  # Lower is better for resting HR
+                            improvement = older_avg - recent_avg
+                            temporal_bonus = min(8.0, improvement * 2.0)
+                elif days_analyzed <= 30:
+                    # Month: Reward sustained healthy HR patterns
+                    healthy_hr_days = len(daily_hr[(daily_hr >= 50) & (daily_hr <= 80)])
+                    healthy_ratio = healthy_hr_days / len(daily_hr)
+                    if healthy_ratio > 0.7:
+                        temporal_bonus = (healthy_ratio - 0.7) * 20  # Up to 6 points
+                else:
+                    # Long-term: Reward stability in healthy range
+                    if 55 <= avg_resting_hr <= 75 and cv < 0.1:  # Stable and healthy
+                        temporal_bonus = 10.0
+            
+            # Age-based adjustments (if we had age data, we'd use it here)
+            # For now, we'll use the standard adult ranges
+            
+            # Weighted final score with time-period specific emphasis
+            if days_analyzed <= 7:
+                # Week: Emphasize recent patterns and consistency
+                final_score = (hr_score * 0.6 + consistency_score * 0.25 + 
+                              hrv_score * 0.15 + temporal_bonus)
+            elif days_analyzed <= 30:
+                # Month: Balance all factors
+                final_score = (hr_score * 0.55 + consistency_score * 0.25 + 
+                              hrv_score * 0.2 + temporal_bonus)
+            else:
+                # Long-term: Emphasize overall HR health and HRV
+                final_score = (hr_score * 0.5 + consistency_score * 0.2 + 
+                              hrv_score * 0.3 + temporal_bonus)
+            
+            # Ensure final score is valid and within bounds
+            if pd.isna(final_score):
+                return 50.0
+            
+            return min(100.0, max(30.0, float(final_score)))
+            
+        except Exception as e:
+            logger.error(f"Error calculating heart health score: {e}")
             return 50.0
     
-    def _calculate_consistency_score(self, health_data: pd.DataFrame) -> float:
-        """Calculate consistency score based on data regularity"""
+    def _calculate_consistency_score(self, health_data: pd.DataFrame, days_analyzed: int = 30) -> float:
+        """Calculate consistency score with temporal pattern analysis for better time-period sensitivity"""
         try:
             # Count unique days with data
             health_data['date'] = pd.to_datetime(health_data['recorded_at']).dt.date
             unique_days = health_data['date'].nunique()
             
-            # Calculate consistency based on data frequency
-            total_days = (health_data['recorded_at'].max() - health_data['recorded_at'].min()).days + 1
-            consistency = (unique_days / total_days) * 100
+            # Calculate consistency based on data frequency and temporal patterns
+            max_timestamp = health_data['recorded_at'].max()
+            min_timestamp = health_data['recorded_at'].min()
             
-            return min(100, consistency)
+            # Check for NaN timestamps
+            if pd.isna(max_timestamp) or pd.isna(min_timestamp):
+                return 50.0
+            
+            total_days = (max_timestamp - min_timestamp).days + 1
+            
+            # Avoid division by zero
+            if total_days <= 0:
+                return 100.0  # Single day = perfect consistency
+            
+            # Calculate base consistency
+            base_consistency = (unique_days / min(days_analyzed, total_days)) * 100
+            
+            # Add temporal pattern analysis
+            daily_data_counts = health_data.groupby('date').size()
+            
+            if len(daily_data_counts) > 1:
+                # Analyze data frequency patterns
+                if days_analyzed <= 7:
+                    # Recent week - focus on recent consistency
+                    recent_data = daily_data_counts.tail(min(7, len(daily_data_counts)))
+                    recent_consistency = len(recent_data) / min(7, days_analyzed) * 100
+                    temporal_bonus = 20 if recent_consistency > 80 else 10
+                    final_score = base_consistency * 1.4 + temporal_bonus
+                elif days_analyzed <= 30:
+                    # Month view - balance recent and overall
+                    recent_data = daily_data_counts.tail(min(14, len(daily_data_counts)))
+                    recent_consistency = len(recent_data) / min(14, days_analyzed) * 100
+                    overall_variability = daily_data_counts.std() / max(daily_data_counts.mean(), 1)
+                    variability_penalty = min(15, overall_variability * 10)
+                    final_score = base_consistency * 1.2 - variability_penalty
+                else:
+                    # Longer periods - reward sustained consistency
+                    data_gaps = self._calculate_data_gaps(daily_data_counts)
+                    gap_penalty = min(20, data_gaps * 5)
+                    sustained_bonus = 15 if base_consistency > 70 else 5
+                    final_score = base_consistency * 0.9 + sustained_bonus - gap_penalty
+            else:
+                final_score = base_consistency
+            
+            # Ensure result is not NaN and within bounds
+            if pd.isna(final_score):
+                return 50.0
+            
+            return min(100, max(30, final_score))
             
         except Exception:
             return 50.0
     
-    def _calculate_trend_score(self, health_data: pd.DataFrame) -> float:
-        """Calculate trend score based on improvement over time"""
+    def _calculate_data_gaps(self, daily_data_counts):
+        """Calculate data gap penalties for consistency scoring"""
         try:
-            # Analyze trends in key metrics
+            dates = pd.to_datetime(daily_data_counts.index)
+            if len(dates) <= 1:
+                return 0
+            
+            # Find gaps larger than 2 days
+            date_diffs = dates.diff().dt.days.fillna(1)
+            large_gaps = date_diffs[date_diffs > 2]
+            return len(large_gaps)
+        except:
+            return 0
+    
+    def _calculate_trend_score(self, health_data: pd.DataFrame, days_analyzed: int = 30) -> float:
+        """Calculate trend score based on improvement over time with period-sensitive analysis"""
+        try:
+            # Analyze trends in key metrics with period-appropriate windows
             key_metrics = ['activity_steps', 'sleep_duration', 'heart_rate_resting']
             trend_scores = []
             
+            # Adjust comparison windows based on analysis period
+            if days_analyzed <= 7:
+                # For week view, compare last 3 days vs first 3 days
+                recent_window = 3
+                older_window = 3
+                min_data_points = 5
+            elif days_analyzed <= 30:
+                # For month view, compare last week vs first week
+                recent_window = 7
+                older_window = 7
+                min_data_points = 10
+            else:
+                # For longer periods, compare last 2 weeks vs first 2 weeks
+                recent_window = 14
+                older_window = 14
+                min_data_points = 20
+            
             for metric in key_metrics:
                 metric_data = health_data[health_data['metric_type'] == metric]
-                if len(metric_data) > 7:  # Need at least a week of data
-                    # Simple trend calculation
+                if len(metric_data) >= min_data_points:  # Adjusted minimum data requirement
+                    # Time-sensitive trend calculation
                     metric_data = metric_data.sort_values('recorded_at')
-                    recent_avg = metric_data.tail(7)['value'].mean()
-                    older_avg = metric_data.head(7)['value'].mean()
+                    recent_avg = metric_data.tail(recent_window)['value'].mean()
+                    older_avg = metric_data.head(older_window)['value'].mean()
+                    
+                    # Check for NaN values before calculation
+                    if pd.isna(recent_avg) or pd.isna(older_avg) or older_avg == 0:
+                        continue
                     
                     if metric == 'heart_rate_resting':
                         # Lower is better for resting heart rate
@@ -607,9 +1166,27 @@ class HealthInsightsEngine:
                         # Higher is better for steps and sleep
                         trend = (recent_avg - older_avg) / older_avg * 100
                     
-                    trend_scores.append(max(0, min(100, 50 + trend * 5)))
+                    # Ensure trend is not NaN or infinite
+                    if not pd.isna(trend) and np.isfinite(trend):
+                        # Scale trend impact based on time period
+                        if days_analyzed <= 7:
+                            # Short-term trends are more volatile, moderate the impact
+                            trend_impact = trend * 3
+                        elif days_analyzed <= 30:
+                            # Standard trend impact
+                            trend_impact = trend * 5
+                        else:
+                            # Long-term trends are more meaningful, amplify slightly
+                            trend_impact = trend * 6
+                        
+                        trend_scores.append(max(0, min(100, 50 + trend_impact)))
             
-            return np.mean(trend_scores) if trend_scores else 50.0
+            # Use np.nanmean to handle any remaining NaN values, with fallback
+            if trend_scores:
+                result = np.nanmean(trend_scores)
+                return float(result) if not pd.isna(result) else 50.0
+            else:
+                return 50.0
             
         except Exception:
             return 50.0
@@ -660,6 +1237,28 @@ class HealthInsightsEngine:
             logger.error(f"Error checking achievements: {str(e)}")
         
         return achievements
+    
+    def _identify_available_metrics(self, health_data: pd.DataFrame) -> dict:
+        """Identify which metric categories have sufficient data for scoring"""
+        available = {}
+        
+        # Activity metrics
+        activity_metrics = health_data[health_data['metric_type'].isin(['activity_steps', 'activity_workouts', 'activity_active_energy'])]
+        available['activity'] = not activity_metrics.empty
+        
+        # Sleep metrics  
+        sleep_metrics = health_data[health_data['metric_type'] == 'sleep_duration']
+        available['sleep'] = not sleep_metrics.empty
+        
+        # Nutrition metrics
+        nutrition_metrics = health_data[health_data['metric_type'].isin(['nutrition_calories', 'nutrition_protein', 'nutrition_carbs', 'nutrition_fat'])]
+        available['nutrition'] = not nutrition_metrics.empty
+        
+        # Heart health metrics (FIXED: using correct metric name)
+        heart_metrics = health_data[health_data['metric_type'].isin(['heart_rate', 'resting_heart_rate', 'heart_rate_variability'])]
+        available['heart_health'] = not heart_metrics.empty
+        
+        return available
 
 
 # Global instance

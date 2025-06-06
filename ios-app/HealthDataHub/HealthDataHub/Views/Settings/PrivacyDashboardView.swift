@@ -408,7 +408,7 @@ struct PrivacyDashboardView: View {
                 action: "Data Sync",
                 description: "Health data synced to backend",
                 timestamp: Date(),
-                dataTypes: ["Steps", "Heart Rate"]
+                dataTypes: ["Steps", "Resting Heart Rate"]
             ),
             PrivacyAuditLog(
                 action: "Permission Change",
@@ -606,7 +606,7 @@ struct PrivacySettings {
     
     enum HealthDataType: String, CaseIterable {
         case steps = "Steps"
-        case heartRate = "Heart Rate"
+        case heartRate = "Resting Heart Rate"
         case sleep = "Sleep"
         case weight = "Weight"
         case nutrition = "Nutrition"

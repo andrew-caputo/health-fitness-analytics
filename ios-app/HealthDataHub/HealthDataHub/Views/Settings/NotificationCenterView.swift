@@ -261,7 +261,7 @@ struct NotificationCenterView: View {
             ),
             HealthNotification(
                 type: .healthAlert,
-                title: "Heart Rate Anomaly Detected",
+                title: "Resting Heart Rate Anomaly Detected",
                 message: "Your resting heart rate has been elevated for the past 3 days. Consider consulting your healthcare provider.",
                 timestamp: Date().addingTimeInterval(-7200),
                 isRead: true,

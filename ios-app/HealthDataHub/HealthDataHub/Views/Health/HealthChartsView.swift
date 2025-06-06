@@ -50,7 +50,7 @@ struct HealthChartsView: View {
     
     enum HealthMetric: String, CaseIterable {
         case steps = "Steps"
-        case heartRate = "Heart Rate"
+        case heartRate = "Resting Heart Rate"
         case activeEnergy = "Active Energy"
         case sleep = "Sleep"
         case weight = "Weight"
@@ -617,6 +617,40 @@ struct HealthChartsView: View {
     }
     
     private func getRealHeartRateForDate(startDate: Date, endDate: Date, completion: @escaping (Double?) -> Void) {
+        // Prioritize resting heart rate, fallback to general heart rate (matching backend logic)
+        guard let restingHeartRateType = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) else {
+            // Fallback to general heart rate if resting HR type not available
+            getRealGeneralHeartRateForDate(startDate: startDate, endDate: endDate, completion: completion)
+            return
+        }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        
+        // First try to get resting heart rate
+        let restingQuery = HKSampleQuery(sampleType: restingHeartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { _, samples, error in
+            if let error = error {
+                print("❌ Error reading resting heart rate for \(startDate): \(error.localizedDescription)")
+                // Fallback to general heart rate
+                self.getRealGeneralHeartRateForDate(startDate: startDate, endDate: endDate, completion: completion)
+            } else if let restingHRSamples = samples as? [HKQuantitySample], !restingHRSamples.isEmpty {
+                // Use resting heart rate (preferred)
+                let totalRestingHR = restingHRSamples.reduce(0.0) { sum, sample in
+                    sum + sample.quantity.doubleValue(for: HKUnit(from: "count/min"))
+                }
+                let averageRestingHR = totalRestingHR / Double(restingHRSamples.count)
+                print("✅ Read average resting heart rate \(averageRestingHR) for \(startDate) from \(restingHRSamples.count) samples")
+                completion(averageRestingHR)
+            } else {
+                print("⚠️ No resting heart rate data found for \(startDate), falling back to general heart rate")
+                // Fallback to general heart rate
+                self.getRealGeneralHeartRateForDate(startDate: startDate, endDate: endDate, completion: completion)
+            }
+        }
+        healthDataManager.healthStore.execute(restingQuery)
+    }
+    
+    private func getRealGeneralHeartRateForDate(startDate: Date, endDate: Date, completion: @escaping (Double?) -> Void) {
         guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
             completion(nil)
             return
@@ -626,7 +660,7 @@ struct HealthChartsView: View {
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
         let query = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { _, samples, error in
             if let error = error {
-                print("❌ Error reading heart rate for \(startDate): \(error.localizedDescription)")
+                print("❌ Error reading general heart rate for \(startDate): \(error.localizedDescription)")
                 completion(nil)
             } else if let heartRateSamples = samples as? [HKQuantitySample], !heartRateSamples.isEmpty {
                 // Calculate average heart rate for the day
@@ -634,10 +668,10 @@ struct HealthChartsView: View {
                     sum + sample.quantity.doubleValue(for: HKUnit(from: "count/min"))
                 }
                 let averageHeartRate = totalHeartRate / Double(heartRateSamples.count)
-                print("✅ Read average heart rate \(averageHeartRate) for \(startDate) from \(heartRateSamples.count) samples")
+                print("✅ Read average general heart rate \(averageHeartRate) for \(startDate) from \(heartRateSamples.count) samples")
                 completion(averageHeartRate)
             } else {
-                print("⚠️ No heart rate data found for \(startDate)")
+                print("⚠️ No general heart rate data found for \(startDate)")
                 completion(nil)
             }
         }
@@ -766,6 +800,7 @@ struct HealthChartsView: View {
         case .steps:
             value = Double(healthDataManager.todaySteps)
         case .heartRate:
+            // currentHeartRate now prioritizes resting HR with fallback to general HR (matching backend)
             value = Double(healthDataManager.currentHeartRate)
         case .activeEnergy:
             value = Double(healthDataManager.todayActiveCalories)

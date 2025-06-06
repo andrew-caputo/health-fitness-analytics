@@ -233,7 +233,7 @@ class GoalProgressViewModel: ObservableObject {
                 icon: "heart.fill",
                 isActive: true,
                 lastSync: Date(),
-                dataTypes: ["Steps", "Heart Rate", "Sleep"],
+                dataTypes: ["Steps", "Resting Heart Rate", "Sleep"],
                 syncFrequency: "Real-time"
             ),
             ConnectedDataSource(

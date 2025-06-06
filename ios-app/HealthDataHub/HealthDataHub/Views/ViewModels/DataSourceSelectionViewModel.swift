@@ -43,7 +43,7 @@ class DataSourceSelectionViewModel: ObservableObject {
     
     var linkedCategoriesMessage: String? {
         if preferences[.activity] != nil {
-            return "Heart Rate and Workouts will default to the same source as Activity, but you can change them to different sources if you want."
+            return "Resting Heart Rate and Workouts will default to the same source as Activity, but you can change them to different sources if you want."
         }
         return nil
     }

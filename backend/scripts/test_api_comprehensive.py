@@ -18,7 +18,7 @@ from typing import Dict, Any, Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class APITester:
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: str = "http://192.168.2.131:8001"):
         self.base_url = base_url
         self.session = requests.Session()
         self.access_token: Optional[str] = None
@@ -365,7 +365,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="Comprehensive API Testing")
-    parser.add_argument("--url", default="http://localhost:8000", help="Base URL for API")
+    parser.add_argument("--url", default="http://192.168.2.131:8001", help="Base URL for API")
     parser.add_argument("--email", default="test@healthanalytics.com", help="Test user email")
     parser.add_argument("--password", default="testpassword123", help="Test user password")
     
